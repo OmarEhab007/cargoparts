@@ -1,0 +1,146 @@
+{
+  "common": {
+    "appName": "Cargo Parts",
+    "search": "Search",
+    "searchPlaceholder": "Search for parts...",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Operation successful",
+    "currency": "SAR",
+    "sar": "Saudi Riyal"
+  },
+  "navigation": {
+    "home": "Home",
+    "shop": "Shop",
+    "cart": "Cart",
+    "orders": "Orders",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "logout": "Logout",
+    "login": "Login",
+    "register": "Register"
+  },
+  "auth": {
+    "loginTitle": "Login",
+    "registerTitle": "Create Account",
+    "email": "Email",
+    "phone": "Phone Number",
+    "otpCode": "Verification Code",
+    "sendOtp": "Send Code",
+    "verifyOtp": "Verify",
+    "resendOtp": "Resend Code",
+    "loginSuccess": "Login successful",
+    "logoutSuccess": "Logout successful",
+    "invalidCredentials": "Invalid credentials",
+    "otpSent": "Verification code sent",
+    "invalidOtp": "Invalid verification code"
+  },
+  "listing": {
+    "title": "Title",
+    "description": "Description",
+    "price": "Price",
+    "condition": "Condition",
+    "oemNumber": "OEM Number",
+    "make": "Make",
+    "model": "Model",
+    "yearFrom": "Year From",
+    "yearTo": "Year To",
+    "location": "Location",
+    "seller": "Seller",
+    "addToCart": "Add to Cart",
+    "outOfStock": "Out of Stock",
+    "inStock": "In Stock",
+    "conditions": {
+      "new": "New",
+      "like_new": "Like New",
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "salvage": "Salvage"
+    }
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": "Your cart is empty",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "tax": "Tax",
+    "total": "Total",
+    "checkout": "Checkout",
+    "remove": "Remove",
+    "quantity": "Quantity",
+    "continueShopping": "Continue Shopping"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "shippingAddress": "Shipping Address",
+    "paymentMethod": "Payment Method",
+    "orderSummary": "Order Summary",
+    "placeOrder": "Place Order",
+    "fullName": "Full Name",
+    "addressLine1": "Address Line 1",
+    "addressLine2": "Address Line 2",
+    "city": "City",
+    "state": "State",
+    "postalCode": "Postal Code",
+    "country": "Country",
+    "phoneNumber": "Phone Number"
+  },
+  "order": {
+    "orderNumber": "Order Number",
+    "orderDate": "Order Date",
+    "status": "Status",
+    "trackOrder": "Track Order",
+    "viewDetails": "View Details",
+    "statuses": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
+    }
+  },
+  "seller": {
+    "dashboard": "Seller Dashboard",
+    "listings": "Listings",
+    "newListing": "New Listing",
+    "sales": "Sales",
+    "earnings": "Earnings",
+    "pendingOrders": "Pending Orders",
+    "completedOrders": "Completed Orders",
+    "totalListings": "Total Listings",
+    "activeListings": "Active Listings"
+  },
+  "search": {
+    "results": "Search Results",
+    "noResults": "No results found",
+    "filters": "Filters",
+    "sortBy": "Sort by",
+    "priceRange": "Price Range",
+    "minPrice": "Min Price",
+    "maxPrice": "Max Price",
+    "applyFilters": "Apply",
+    "clearFilters": "Clear",
+    "sortOptions": {
+      "relevance": "Most Relevant",
+      "priceLow": "Price: Low to High",
+      "priceHigh": "Price: High to Low",
+      "newest": "Newest First"
+    }
+  },
+  "footer": {
+    "aboutUs": "About Us",
+    "contact": "Contact",
+    "terms": "Terms & Conditions",
+    "privacy": "Privacy Policy",
+    "help": "Help",
+    "copyright": "All rights reserved"
+  }
+}

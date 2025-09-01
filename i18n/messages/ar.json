@@ -1,0 +1,146 @@
+{
+  "common": {
+    "appName": "قطع غيار",
+    "search": "بحث",
+    "searchPlaceholder": "ابحث عن قطع غيار...",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "add": "إضافة",
+    "submit": "إرسال",
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ",
+    "success": "تمت العملية بنجاح",
+    "currency": "ر.س",
+    "sar": "ريال سعودي"
+  },
+  "navigation": {
+    "home": "الرئيسية",
+    "shop": "المتجر",
+    "cart": "السلة",
+    "orders": "الطلبات",
+    "dashboard": "لوحة التحكم",
+    "profile": "الملف الشخصي",
+    "logout": "تسجيل الخروج",
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب"
+  },
+  "auth": {
+    "loginTitle": "تسجيل الدخول",
+    "registerTitle": "إنشاء حساب جديد",
+    "email": "البريد الإلكتروني",
+    "phone": "رقم الجوال",
+    "otpCode": "رمز التحقق",
+    "sendOtp": "إرسال رمز التحقق",
+    "verifyOtp": "تحقق",
+    "resendOtp": "إعادة إرسال الرمز",
+    "loginSuccess": "تم تسجيل الدخول بنجاح",
+    "logoutSuccess": "تم تسجيل الخروج بنجاح",
+    "invalidCredentials": "بيانات الدخول غير صحيحة",
+    "otpSent": "تم إرسال رمز التحقق",
+    "invalidOtp": "رمز التحقق غير صحيح"
+  },
+  "listing": {
+    "title": "العنوان",
+    "description": "الوصف",
+    "price": "السعر",
+    "condition": "الحالة",
+    "oemNumber": "رقم القطعة الأصلي",
+    "make": "الشركة المصنعة",
+    "model": "الموديل",
+    "yearFrom": "السنة من",
+    "yearTo": "السنة إلى",
+    "location": "الموقع",
+    "seller": "البائع",
+    "addToCart": "أضف إلى السلة",
+    "outOfStock": "غير متوفر",
+    "inStock": "متوفر",
+    "conditions": {
+      "new": "جديد",
+      "like_new": "شبه جديد",
+      "excellent": "ممتاز",
+      "good": "جيد",
+      "fair": "مقبول",
+      "salvage": "سكراب"
+    }
+  },
+  "cart": {
+    "title": "سلة التسوق",
+    "empty": "السلة فارغة",
+    "subtotal": "المجموع الفرعي",
+    "shipping": "الشحن",
+    "tax": "الضريبة",
+    "total": "المجموع الكلي",
+    "checkout": "إتمام الطلب",
+    "remove": "إزالة",
+    "quantity": "الكمية",
+    "continueShopping": "متابعة التسوق"
+  },
+  "checkout": {
+    "title": "إتمام الطلب",
+    "shippingAddress": "عنوان الشحن",
+    "paymentMethod": "طريقة الدفع",
+    "orderSummary": "ملخص الطلب",
+    "placeOrder": "إتمام الطلب",
+    "fullName": "الاسم الكامل",
+    "addressLine1": "العنوان - السطر الأول",
+    "addressLine2": "العنوان - السطر الثاني",
+    "city": "المدينة",
+    "state": "المنطقة",
+    "postalCode": "الرمز البريدي",
+    "country": "الدولة",
+    "phoneNumber": "رقم الهاتف"
+  },
+  "order": {
+    "orderNumber": "رقم الطلب",
+    "orderDate": "تاريخ الطلب",
+    "status": "الحالة",
+    "trackOrder": "تتبع الطلب",
+    "viewDetails": "عرض التفاصيل",
+    "statuses": {
+      "pending": "قيد الانتظار",
+      "processing": "قيد المعالجة",
+      "shipped": "تم الشحن",
+      "delivered": "تم التسليم",
+      "cancelled": "ملغي",
+      "refunded": "مسترجع"
+    }
+  },
+  "seller": {
+    "dashboard": "لوحة تحكم البائع",
+    "listings": "القطع المعروضة",
+    "newListing": "إضافة قطعة جديدة",
+    "sales": "المبيعات",
+    "earnings": "الأرباح",
+    "pendingOrders": "الطلبات المعلقة",
+    "completedOrders": "الطلبات المكتملة",
+    "totalListings": "إجمالي القطع",
+    "activeListings": "القطع النشطة"
+  },
+  "search": {
+    "results": "نتائج البحث",
+    "noResults": "لا توجد نتائج",
+    "filters": "التصفية",
+    "sortBy": "ترتيب حسب",
+    "priceRange": "نطاق السعر",
+    "minPrice": "أقل سعر",
+    "maxPrice": "أعلى سعر",
+    "applyFilters": "تطبيق",
+    "clearFilters": "مسح",
+    "sortOptions": {
+      "relevance": "الأكثر صلة",
+      "priceLow": "السعر: من الأقل للأعلى",
+      "priceHigh": "السعر: من الأعلى للأقل",
+      "newest": "الأحدث أولاً"
+    }
+  },
+  "footer": {
+    "aboutUs": "من نحن",
+    "contact": "اتصل بنا",
+    "terms": "الشروط والأحكام",
+    "privacy": "سياسة الخصوصية",
+    "help": "المساعدة",
+    "copyright": "جميع الحقوق محفوظة"
+  }
+}

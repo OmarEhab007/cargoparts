@@ -1,0 +1,133 @@
+// Prisma schema for Cargo Parts marketplace (POC)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --------------------
+// MODELS
+// --------------------
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  phone     String?   @unique
+  role      Role      @default(BUYER)
+  listings  Listing[]
+  orders    Order[]
+  createdAt DateTime  @default(now())
+
+  Seller Seller[]
+}
+
+model Seller {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  yardName  String
+  city      String
+  verified  Boolean   @default(false)
+  listings  Listing[]
+  createdAt DateTime  @default(now())
+}
+
+model Listing {
+  id          String    @id @default(cuid())
+  sellerId    String
+  seller      Seller    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  titleAr     String
+  titleEn     String?
+  description String?
+  priceSar    Int
+  make        String
+  model       String
+  fromYear    Int
+  toYear      Int
+  condition   Condition @default(USED)
+  city        String
+  photos      Photo[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  OrderItem OrderItem[]
+
+  User User[]
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  buyerId   String
+  buyer     User        @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  items     OrderItem[]
+  total     Int
+  status    OrderStatus @default(PENDING)
+  address   String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  Payment Payment[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id])
+  qty       Int     @default(1)
+  priceSar  Int
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  orderId   String        @unique
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider  String
+  status    PaymentStatus @default(INITIATED)
+  reference String?
+  createdAt DateTime      @default(now())
+}
+
+// --------------------
+// ENUMS
+// --------------------
+
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum Condition {
+  USED
+  REFURBISHED
+  NEW
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  INITIATED
+  SUCCESS
+  FAILED
+}

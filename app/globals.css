@@ -1,26 +1,1100 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono);
+  --font-arabic: var(--font-cairo), system-ui, -apple-system, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* =================================================================
+   SAUDI ARABIA & RIYADH INSPIRED COLOR PALETTE
+   =================================================================
+   Primary Colors:
+   - Saudi Green (#165d31) - National flag color, prosperity
+   - Desert Gold (#D4AF37) - Golden sands, luxury, tradition
+   - Riyadh Sky (#87CEEB) - Clear desert sky
+   
+   Supporting Colors:
+   - Palm Green - Oasis and palm trees
+   - Sand Beige - Desert landscape
+   - Date Brown - Traditional dates
+   - Pearl White - Arabian Gulf pearls
+   ================================================================= */
+
+:root {
+  /* Core Design Tokens */
+  --radius: 0.625rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.25rem;
+  
+  /* Saudi Arabia & Riyadh Color Palette - Light Mode */
+  
+  /* Primary Saudi Green - from the national flag */
+  --saudi-green: oklch(0.467 0.156 153.4);     /* #165d31 */
+  --saudi-green-light: oklch(0.567 0.126 153.4); /* Lighter variant */
+  --saudi-green-dark: oklch(0.367 0.176 153.4);  /* Darker variant */
+  
+  /* Desert Gold - luxury and tradition */
+  --desert-gold: oklch(0.78 0.115 85.5);        /* #D4AF37 */
+  --desert-gold-light: oklch(0.88 0.095 85.5);  /* Lighter variant */
+  --desert-gold-dark: oklch(0.68 0.135 85.5);   /* Darker variant */
+  
+  /* Riyadh Sky Blue */
+  --riyadh-sky: oklch(0.82 0.072 217.3);        /* #87CEEB */
+  --riyadh-sky-light: oklch(0.92 0.052 217.3);  /* Morning sky */
+  --riyadh-sky-dark: oklch(0.62 0.092 217.3);   /* Evening sky */
+  
+  /* Supporting Colors */
+  --palm-green: oklch(0.65 0.11 142.5);         /* Palm tree green */
+  --sand-beige: oklch(0.91 0.037 84.3);         /* Desert sand */
+  --date-brown: oklch(0.48 0.095 58.7);         /* Traditional dates */
+  --pearl-white: oklch(0.985 0.005 106.8);      /* Arabian pearls */
+  --oasis-teal: oklch(0.68 0.098 187.4);        /* Oasis water */
+  
+  /* Neutral Palette */
+  --saudi-black: oklch(0.15 0 0);               /* Rich black */
+  --saudi-gray-900: oklch(0.25 0 0);            /* Very dark gray */
+  --saudi-gray-700: oklch(0.45 0 0);            /* Dark gray */
+  --saudi-gray-500: oklch(0.65 0 0);            /* Medium gray */
+  --saudi-gray-300: oklch(0.85 0 0);            /* Light gray */
+  --saudi-gray-100: oklch(0.95 0 0);            /* Very light gray */
+  --saudi-white: oklch(1 0 0);                  /* Pure white */
+  
+  /* Semantic Color Mapping */
+  --background: var(--pearl-white);
+  --foreground: var(--saudi-black);
+  --card: var(--saudi-white);
+  --card-foreground: var(--saudi-gray-900);
+  --popover: var(--saudi-white);
+  --popover-foreground: var(--saudi-gray-900);
+  
+  /* Primary - Saudi Green for main actions */
+  --primary: var(--saudi-green);
+  --primary-foreground: var(--pearl-white);
+  
+  /* Secondary - Desert Gold for highlights */
+  --secondary: var(--desert-gold-light);
+  --secondary-foreground: var(--saudi-green-dark);
+  
+  /* Muted - Sand tones */
+  --muted: var(--sand-beige);
+  --muted-foreground: var(--saudi-gray-700);
+  
+  /* Accent - Riyadh Sky */
+  --accent: var(--riyadh-sky-light);
+  --accent-foreground: var(--saudi-green-dark);
+  
+  /* Status Colors */
+  --destructive: oklch(0.577 0.245 27.325);     /* Error red */
+  --success: var(--palm-green);                 /* Success green */
+  --warning: var(--desert-gold);                /* Warning gold */
+  --info: var(--riyadh-sky);                    /* Info blue */
+  
+  /* Border & Input */
+  --border: var(--saudi-gray-300);
+  --input: var(--saudi-gray-100);
+  --ring: var(--saudi-green);
+  
+  /* Chart Colors - Saudi themed */
+  --chart-1: var(--saudi-green);
+  --chart-2: var(--desert-gold);
+  --chart-3: var(--riyadh-sky);
+  --chart-4: var(--palm-green);
+  --chart-5: var(--date-brown);
+  
+  /* Sidebar */
+  --sidebar: var(--saudi-white);
+  --sidebar-foreground: var(--saudi-gray-900);
+  --sidebar-primary: var(--saudi-green);
+  --sidebar-primary-foreground: var(--pearl-white);
+  --sidebar-accent: var(--sand-beige);
+  --sidebar-accent-foreground: var(--saudi-green-dark);
+  --sidebar-border: var(--saudi-gray-300);
+  --sidebar-ring: var(--saudi-green);
+  
+  /* Gradients */
+  --gradient-saudi: linear-gradient(135deg, var(--saudi-green) 0%, var(--saudi-green-dark) 100%);
+  --gradient-desert: linear-gradient(135deg, var(--desert-gold-light) 0%, var(--desert-gold) 100%);
+  --gradient-sky: linear-gradient(180deg, var(--riyadh-sky-light) 0%, var(--riyadh-sky) 100%);
+  --gradient-oasis: linear-gradient(135deg, var(--palm-green) 0%, var(--oasis-teal) 100%);
+  
+  /* Shadows - softer for desert aesthetic */
+  --shadow-sm: 0 1px 3px 0 oklch(0.15 0 0 / 0.1), 0 1px 2px -1px oklch(0.15 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px oklch(0.15 0 0 / 0.1), 0 2px 4px -2px oklch(0.15 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px oklch(0.15 0 0 / 0.1), 0 4px 6px -4px oklch(0.15 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px oklch(0.15 0 0 / 0.1), 0 8px 10px -6px oklch(0.15 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Mode - Riyadh Night Theme */
+  
+  /* Core backgrounds - deep desert night */
+  --background: oklch(0.12 0 0);                /* Deep night */
+  --foreground: var(--pearl-white);
+  --card: oklch(0.16 0 0);                      /* Slightly elevated */
+  --card-foreground: var(--pearl-white);
+  --popover: oklch(0.18 0 0);
+  --popover-foreground: var(--pearl-white);
+  
+  /* Primary - Brightened Saudi Green for visibility */
+  --primary: var(--saudi-green-light);
+  --primary-foreground: var(--saudi-black);
+  
+  /* Secondary - Desert Gold remains vibrant */
+  --secondary: var(--desert-gold);
+  --secondary-foreground: var(--saudi-black);
+  
+  /* Muted - Darker sand tones */
+  --muted: oklch(0.22 0.01 84.3);
+  --muted-foreground: oklch(0.72 0 0);
+  
+  /* Accent - Night sky blue */
+  --accent: var(--riyadh-sky-dark);
+  --accent-foreground: var(--pearl-white);
+  
+  /* Status Colors - adjusted for dark mode */
+  --destructive: oklch(0.704 0.191 22.216);
+  --success: var(--palm-green);
+  --warning: var(--desert-gold);
+  --info: var(--riyadh-sky);
+  
+  /* Borders & Inputs */
+  --border: oklch(1 0 0 / 15%);
+  --input: oklch(1 0 0 / 20%);
+  --ring: var(--saudi-green-light);
+  
+  /* Chart Colors - vibrant for dark background */
+  --chart-1: var(--saudi-green-light);
+  --chart-2: var(--desert-gold);
+  --chart-3: var(--riyadh-sky);
+  --chart-4: var(--palm-green);
+  --chart-5: var(--oasis-teal);
+  
+  /* Sidebar */
+  --sidebar: oklch(0.14 0 0);
+  --sidebar-foreground: var(--pearl-white);
+  --sidebar-primary: var(--saudi-green-light);
+  --sidebar-primary-foreground: var(--saudi-black);
+  --sidebar-accent: oklch(0.22 0.01 84.3);
+  --sidebar-accent-foreground: var(--pearl-white);
+  --sidebar-border: oklch(1 0 0 / 15%);
+  --sidebar-ring: var(--saudi-green-light);
+  
+  /* Dark mode shadows - more subtle */
+  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.3), 0 1px 2px -1px oklch(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px oklch(0 0 0 / 0.3), 0 2px 4px -2px oklch(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px oklch(0 0 0 / 0.3), 0 4px 6px -4px oklch(0 0 0 / 0.3);
+  --shadow-xl: 0 20px 25px -5px oklch(0 0 0 / 0.3), 0 8px 10px -6px oklch(0 0 0 / 0.3);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  
+  html {
+    direction: ltr;
+  }
+  
+  html[dir="rtl"] {
+    direction: rtl;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+  }
+  
+  /* Ensure body uses proper font based on language */
+  body[lang="ar"],
+  html[lang="ar"] body {
+    font-family: var(--font-cairo), "Segoe UI Arabic", "Arial", sans-serif !important;
+    font-weight: 400;
+  }
+  
+  body[lang="en"],
+  html[lang="en"] body {
+    font-family: var(--font-inter), system-ui, sans-serif;
+  }
+  
+  /* RTL-aware scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-md;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+  
+  /* Enhanced Arabic font optimization */
+  [lang="ar"] {
+    font-family: var(--font-cairo), "Segoe UI Arabic", "Noto Sans Arabic", "Arial", sans-serif;
+    letter-spacing: 0.02em;
+    line-height: 2;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Arabic specific text improvements */
+  [lang="ar"] * {
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
+  
+  /* Enhanced typography for all text elements */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  
+  /* Enhanced Arabic headings */
+  [lang="ar"] h1 {
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    line-height: 1.6;
+  }
+  
+  [lang="ar"] h2 {
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    line-height: 1.7;
+  }
+  
+  [lang="ar"] h3,
+  [lang="ar"] h4,
+  [lang="ar"] h5,
+  [lang="ar"] h6 {
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1.8;
+  }
+  
+  /* Hero section specific improvements */
+  [lang="ar"] .hero-title {
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    line-height: 2.2;
+  }
+  
+  [lang="ar"] .hero-subtitle {
+    font-weight: 500;
+    line-height: 2;
+  }
+  
+  p {
+    line-height: 1.7;
+  }
+  
+  [lang="ar"] p {
+    line-height: 2.1;
+    font-weight: 400;
+    letter-spacing: 0.02em;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* =================================================================
+   8PX GRID SPACING SYSTEM & TYPOGRAPHY SCALE
+   ================================================================= */
+
+@layer base {
+  :root {
+    /* 8px Grid Spacing System */
+    --space-0: 0;
+    --space-0_5: 0.125rem;  /* 2px */
+    --space-1: 0.25rem;     /* 4px */
+    --space-1_5: 0.375rem;  /* 6px */
+    --space-2: 0.5rem;      /* 8px - Base unit */
+    --space-2_5: 0.625rem;  /* 10px */
+    --space-3: 0.75rem;     /* 12px */
+    --space-3_5: 0.875rem;  /* 14px */
+    --space-4: 1rem;        /* 16px */
+    --space-5: 1.25rem;     /* 20px */
+    --space-6: 1.5rem;      /* 24px */
+    --space-7: 1.75rem;     /* 28px */
+    --space-8: 2rem;        /* 32px */
+    --space-9: 2.25rem;     /* 36px */
+    --space-10: 2.5rem;     /* 40px */
+    --space-11: 2.75rem;    /* 44px */
+    --space-12: 3rem;       /* 48px */
+    --space-14: 3.5rem;     /* 56px */
+    --space-16: 4rem;       /* 64px */
+    --space-20: 5rem;       /* 80px */
+    --space-24: 6rem;       /* 96px */
+    --space-28: 7rem;       /* 112px */
+    --space-32: 8rem;       /* 128px */
+    
+    /* Typographic Scale - Arabic-first with fallbacks */
+    --text-xs: 0.75rem;     /* 12px */
+    --text-sm: 0.875rem;    /* 14px */
+    --text-base: 1rem;      /* 16px - Base size */
+    --text-lg: 1.125rem;    /* 18px */
+    --text-xl: 1.25rem;     /* 20px */
+    --text-2xl: 1.5rem;     /* 24px */
+    --text-3xl: 1.875rem;   /* 30px */
+    --text-4xl: 2.25rem;    /* 36px */
+    --text-5xl: 3rem;       /* 48px */
+    --text-6xl: 3.75rem;    /* 60px */
+    --text-7xl: 4.5rem;     /* 72px */
+    --text-8xl: 6rem;       /* 96px */
+    --text-9xl: 8rem;       /* 128px */
+    
+    /* Arabic Typography Adjustments */
+    --text-xs-ar: 0.8125rem;   /* 13px - Slightly larger for Arabic readability */
+    --text-sm-ar: 0.9375rem;   /* 15px */
+    --text-base-ar: 1.0625rem; /* 17px */
+    --text-lg-ar: 1.1875rem;   /* 19px */
+    --text-xl-ar: 1.3125rem;   /* 21px */
+    --text-2xl-ar: 1.625rem;   /* 26px */
+    --text-3xl-ar: 2rem;       /* 32px */
+    --text-4xl-ar: 2.5rem;     /* 40px */
+    --text-5xl-ar: 3.25rem;    /* 52px */
+    --text-6xl-ar: 4rem;       /* 64px */
+    
+    /* Line Heights */
+    --leading-none: 1;
+    --leading-tight: 1.25;
+    --leading-snug: 1.375;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.625;
+    --leading-loose: 2;
+    --leading-ar-tight: 1.6;    /* Arabic needs more line height */
+    --leading-ar-normal: 1.8;
+    --leading-ar-relaxed: 2.1;
+    --leading-ar-loose: 2.4;
+  }
+}
+
+/* Spacing Utility Classes */
+@layer utilities {
+  /* Padding Classes */
+  .p-0 { padding: var(--space-0); }
+  .p-0_5 { padding: var(--space-0_5); }
+  .p-1 { padding: var(--space-1); }
+  .p-1_5 { padding: var(--space-1_5); }
+  .p-2 { padding: var(--space-2); }
+  .p-2_5 { padding: var(--space-2_5); }
+  .p-3 { padding: var(--space-3); }
+  .p-3_5 { padding: var(--space-3_5); }
+  .p-4 { padding: var(--space-4); }
+  .p-5 { padding: var(--space-5); }
+  .p-6 { padding: var(--space-6); }
+  .p-8 { padding: var(--space-8); }
+  .p-10 { padding: var(--space-10); }
+  .p-12 { padding: var(--space-12); }
+  .p-16 { padding: var(--space-16); }
+  .p-20 { padding: var(--space-20); }
+  .p-24 { padding: var(--space-24); }
+  
+  /* Margin Classes */
+  .m-0 { margin: var(--space-0); }
+  .m-1 { margin: var(--space-1); }
+  .m-2 { margin: var(--space-2); }
+  .m-3 { margin: var(--space-3); }
+  .m-4 { margin: var(--space-4); }
+  .m-5 { margin: var(--space-5); }
+  .m-6 { margin: var(--space-6); }
+  .m-8 { margin: var(--space-8); }
+  .m-10 { margin: var(--space-10); }
+  .m-12 { margin: var(--space-12); }
+  .m-16 { margin: var(--space-16); }
+  .m-20 { margin: var(--space-20); }
+  .m-24 { margin: var(--space-24); }
+  
+  /* Gap Classes for Flexbox/Grid */
+  .gap-0 { gap: var(--space-0); }
+  .gap-0_5 { gap: var(--space-0_5); }
+  .gap-1 { gap: var(--space-1); }
+  .gap-1_5 { gap: var(--space-1_5); }
+  .gap-2 { gap: var(--space-2); }
+  .gap-2_5 { gap: var(--space-2_5); }
+  .gap-3 { gap: var(--space-3); }
+  .gap-3_5 { gap: var(--space-3_5); }
+  .gap-4 { gap: var(--space-4); }
+  .gap-5 { gap: var(--space-5); }
+  .gap-6 { gap: var(--space-6); }
+  .gap-8 { gap: var(--space-8); }
+  .gap-10 { gap: var(--space-10); }
+  .gap-12 { gap: var(--space-12); }
+  
+  /* Typography Classes */
+  .text-xs { font-size: var(--text-xs); }
+  .text-sm { font-size: var(--text-sm); }
+  .text-base { font-size: var(--text-base); }
+  .text-lg { font-size: var(--text-lg); }
+  .text-xl { font-size: var(--text-xl); }
+  .text-2xl { font-size: var(--text-2xl); }
+  .text-3xl { font-size: var(--text-3xl); }
+  .text-4xl { font-size: var(--text-4xl); }
+  .text-5xl { font-size: var(--text-5xl); }
+  .text-6xl { font-size: var(--text-6xl); }
+  
+  /* Arabic Typography Classes */
+  [lang="ar"] .text-xs { font-size: var(--text-xs-ar); }
+  [lang="ar"] .text-sm { font-size: var(--text-sm-ar); }
+  [lang="ar"] .text-base { font-size: var(--text-base-ar); }
+  [lang="ar"] .text-lg { font-size: var(--text-lg-ar); }
+  [lang="ar"] .text-xl { font-size: var(--text-xl-ar); }
+  [lang="ar"] .text-2xl { font-size: var(--text-2xl-ar); }
+  [lang="ar"] .text-3xl { font-size: var(--text-3xl-ar); }
+  [lang="ar"] .text-4xl { font-size: var(--text-4xl-ar); }
+  [lang="ar"] .text-5xl { font-size: var(--text-5xl-ar); }
+  [lang="ar"] .text-6xl { font-size: var(--text-6xl-ar); }
+  
+  /* Line Height Classes */
+  .leading-none { line-height: var(--leading-none); }
+  .leading-tight { line-height: var(--leading-tight); }
+  .leading-snug { line-height: var(--leading-snug); }
+  .leading-normal { line-height: var(--leading-normal); }
+  .leading-relaxed { line-height: var(--leading-relaxed); }
+  .leading-loose { line-height: var(--leading-loose); }
+  
+  /* Arabic Line Heights */
+  [lang="ar"] .leading-tight { line-height: var(--leading-ar-tight); }
+  [lang="ar"] .leading-normal { line-height: var(--leading-ar-normal); }
+  [lang="ar"] .leading-relaxed { line-height: var(--leading-ar-relaxed); }
+  [lang="ar"] .leading-loose { line-height: var(--leading-ar-loose); }
+  
+  /* Visual Hierarchy Classes */
+  .hierarchy-title {
+    font-size: var(--text-4xl);
+    font-weight: 900;
+    line-height: var(--leading-tight);
+    margin-bottom: var(--space-6);
+  }
+  
+  [lang="ar"] .hierarchy-title {
+    font-size: var(--text-4xl-ar);
+    line-height: var(--leading-ar-tight);
+    font-weight: 900;
+  }
+  
+  .hierarchy-heading {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    line-height: var(--leading-snug);
+    margin-bottom: var(--space-4);
+  }
+  
+  [lang="ar"] .hierarchy-heading {
+    font-size: var(--text-2xl-ar);
+    line-height: var(--leading-ar-normal);
+    font-weight: 800;
+  }
+  
+  .hierarchy-subheading {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    line-height: var(--leading-normal);
+    margin-bottom: var(--space-3);
+  }
+  
+  [lang="ar"] .hierarchy-subheading {
+    font-size: var(--text-xl-ar);
+    line-height: var(--leading-ar-normal);
+    font-weight: 700;
+  }
+  
+  .hierarchy-body {
+    font-size: var(--text-base);
+    font-weight: 400;
+    line-height: var(--leading-relaxed);
+    margin-bottom: var(--space-4);
+  }
+  
+  [lang="ar"] .hierarchy-body {
+    font-size: var(--text-base-ar);
+    line-height: var(--leading-ar-relaxed);
+    font-weight: 400;
+  }
+  
+  .hierarchy-caption {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    line-height: var(--leading-normal);
+    color: oklch(from var(--foreground) l c h / 0.7);
+  }
+  
+  [lang="ar"] .hierarchy-caption {
+    font-size: var(--text-sm-ar);
+    line-height: var(--leading-ar-normal);
+    font-weight: 600;
+  }
+}
+
+/* =================================================================
+   SAUDI ARABIA THEMED UI COMPONENTS & PATTERNS
+   ================================================================= */
+
+@layer base {
+  /* Saudi Glass morphism effect - inspired by modern Riyadh architecture */
+  .glass-saudi {
+    background: linear-gradient(135deg, 
+      oklch(from var(--pearl-white) l c h / 0.9) 0%, 
+      oklch(from var(--sand-beige) l c h / 0.7) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid oklch(from var(--saudi-green) l c h / 0.15);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .dark .glass-saudi {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.8) 0%, 
+      oklch(from var(--saudi-green-dark) l c h / 0.1) 100%);
+    border: 1px solid oklch(from var(--saudi-green-light) l c h / 0.2);
+  }
+  
+  /* Desert-inspired gradient backgrounds */
+  .bg-gradient-saudi {
+    background: var(--gradient-saudi);
+  }
+  
+  .bg-gradient-desert {
+    background: var(--gradient-desert);
+  }
+  
+  .bg-gradient-sky {
+    background: var(--gradient-sky);
+  }
+  
+  .bg-gradient-oasis {
+    background: var(--gradient-oasis);
+  }
+  
+  /* Saudi pattern overlay - geometric Islamic patterns */
+  .pattern-saudi::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30z' fill='%23165d31' fill-opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+  
+  /* Traditional glass effect */
+  .glass-effect {
+    background-color: oklch(from var(--background) l c h / 0.8);
+    backdrop-filter: blur(12px);
+    border-color: oklch(from var(--border) l c h / 0.5);
+  }
+  
+  /* Modern shadow effects */
+  .shadow-modern {
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .shadow-modern-lg {
+    box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Card hover effects */
+  .card-hover {
+    transition: all 300ms ease-in-out;
+  }
+  
+  .card-hover:hover {
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px);
+  }
+  
+  /* Button hover effects */
+  .btn-hover {
+    transition: all 200ms ease-in-out;
+  }
+  
+  .btn-hover:hover {
+    transform: scale(1.05);
+  }
+  
+  .btn-hover:active {
+    transform: scale(0.95);
+  }
+  
+  /* Text gradient */
+  .text-gradient {
+    background: linear-gradient(to right, var(--primary), oklch(from var(--primary) l c h / 0.6));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Gradient backgrounds */
+  .gradient-primary {
+    background: linear-gradient(to bottom right, oklch(from var(--primary) l c h / 0.9), var(--primary));
+  }
+  
+  .gradient-accent {
+    background: linear-gradient(to bottom right, oklch(from var(--accent) l c h / 0.9), var(--accent));
+  }
+  
+  /* Modern input styles */
+  .input-modern {
+    border-color: oklch(from var(--border) l c h / 0.5);
+    transition: all 200ms ease-in-out;
+  }
+  
+  .input-modern:focus {
+    border-color: oklch(from var(--primary) l c h / 0.5);
+    box-shadow: 0 0 0 2px oklch(from var(--primary) l c h / 0.2);
+  }
+  
+  /* Badge modern styles */
+  .badge-modern {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    backdrop-filter: blur(4px);
+  }
+  
+  /* Icon container */
+  .icon-container {
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    background-color: oklch(from var(--primary) l c h / 0.1);
+    color: var(--primary);
+    transition: all 200ms ease-in-out;
+  }
+  
+  .icon-container:hover {
+    background-color: oklch(from var(--primary) l c h / 0.2);
+  }
+  
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Modern scrollbar for Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+  
+  /* Card Typography Enhancements */
+  .card-title-enhanced {
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+  
+  [lang="ar"] .card-title-enhanced {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.8;
+    letter-spacing: 0.02em;
+    font-family: var(--font-cairo), "Segoe UI Arabic", "Arial", sans-serif;
+  }
+  
+  /* Ensure all Arabic text uses Cairo font */
+  [lang="ar"] h1,
+  [lang="ar"] h2,
+  [lang="ar"] h3,
+  [lang="ar"] h4,
+  [lang="ar"] h5,
+  [lang="ar"] h6,
+  [lang="ar"] p,
+  [lang="ar"] span,
+  [lang="ar"] div,
+  [lang="ar"] a,
+  [lang="ar"] button,
+  [lang="ar"] input,
+  [lang="ar"] textarea,
+  [lang="ar"] select,
+  [lang="ar"] label {
+    font-family: var(--font-cairo), "Segoe UI Arabic", "Arial", sans-serif !important;
+  }
+  
+  .text-price {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  [lang="ar"] .text-price {
+    font-size: 1.625rem;
+    font-weight: 900;
+  }
+  
+  .text-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  
+  [lang="ar"] .text-label {
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+  
+  .text-detail {
+    font-size: 0.8125rem;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+  
+  [lang="ar"] .text-detail {
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+  
+  /* Button text enhancement */
+  button {
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  
+  [lang="ar"] button {
+    font-family: var(--font-cairo), "Segoe UI Arabic", "Arial", sans-serif !important;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.6;
+  }
+  
+  /* Navigation links in Arabic */
+  [lang="ar"] nav a,
+  [lang="ar"] .nav-link {
+    font-family: var(--font-cairo), "Segoe UI Arabic", "Arial", sans-serif !important;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+  
+  /* Badge text enhancement */
+  .badge-text {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+  }
+  
+  [lang="ar"] .badge-text {
+    font-weight: 700;
+    text-transform: none;
+    font-size: 0.75rem;
+  }
+}
+
+/* =================================================================
+   SAUDI ARABIA BRAND IDENTITY CLASSES
+   ================================================================= */
+
+@layer utilities {
+  /* Saudi-themed text colors */
+  .text-saudi-green { color: var(--saudi-green); }
+  .text-saudi-green-light { color: var(--saudi-green-light); }
+  .text-saudi-green-dark { color: var(--saudi-green-dark); }
+  .text-desert-gold { color: var(--desert-gold); }
+  .text-desert-gold-light { color: var(--desert-gold-light); }
+  .text-desert-gold-dark { color: var(--desert-gold-dark); }
+  .text-riyadh-sky { color: var(--riyadh-sky); }
+  .text-palm-green { color: var(--palm-green); }
+  .text-sand-beige { color: var(--sand-beige); }
+  .text-date-brown { color: var(--date-brown); }
+  .text-oasis-teal { color: var(--oasis-teal); }
+  
+  /* Saudi-themed background colors */
+  .bg-saudi-green { background-color: var(--saudi-green); }
+  .bg-saudi-green-light { background-color: var(--saudi-green-light); }
+  .bg-saudi-green-dark { background-color: var(--saudi-green-dark); }
+  .bg-desert-gold { background-color: var(--desert-gold); }
+  .bg-desert-gold-light { background-color: var(--desert-gold-light); }
+  .bg-desert-gold-dark { background-color: var(--desert-gold-dark); }
+  .bg-riyadh-sky { background-color: var(--riyadh-sky); }
+  .bg-riyadh-sky-light { background-color: var(--riyadh-sky-light); }
+  .bg-palm-green { background-color: var(--palm-green); }
+  .bg-sand-beige { background-color: var(--sand-beige); }
+  .bg-pearl-white { background-color: var(--pearl-white); }
+  .bg-oasis-teal { background-color: var(--oasis-teal); }
+  
+  /* Saudi-themed borders */
+  .border-saudi-green { border-color: var(--saudi-green); }
+  .border-desert-gold { border-color: var(--desert-gold); }
+  .border-riyadh-sky { border-color: var(--riyadh-sky); }
+  
+  /* Saudi-themed hover states */
+  .hover-saudi:hover {
+    background-color: var(--saudi-green);
+    color: var(--pearl-white);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    transition: all 300ms ease;
+  }
+  
+  .hover-gold:hover {
+    background-color: var(--desert-gold);
+    color: var(--saudi-green-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    transition: all 300ms ease;
+  }
+  
+  /* Saudi badge variants */
+  .badge-saudi {
+    background-color: var(--saudi-green);
+    color: var(--pearl-white);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.75rem;
+  }
+  
+  .badge-gold {
+    background-color: var(--desert-gold);
+    color: var(--saudi-green-dark);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.75rem;
+  }
+  
+  .badge-premium {
+    background: var(--gradient-desert);
+    color: var(--saudi-green-dark);
+    padding: 0.25rem 1rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    box-shadow: var(--shadow-md);
+  }
+  
+  /* Saudi card styles */
+  .card-saudi {
+    background: var(--card);
+    border: 1px solid oklch(from var(--saudi-green) l c h / 0.1);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .card-saudi::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: var(--gradient-saudi);
+    opacity: 0.05;
+    border-radius: 50%;
+    transform: translate(30%, -30%);
+  }
+  
+  .card-saudi-premium {
+    background: linear-gradient(135deg, var(--card) 0%, oklch(from var(--desert-gold-light) l c h / 0.1) 100%);
+    border: 2px solid var(--desert-gold);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    box-shadow: var(--shadow-xl);
+    position: relative;
+  }
+  
+  /* Saudi button variants */
+  .btn-saudi {
+    background: var(--gradient-saudi);
+    color: var(--pearl-white);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    transition: all 300ms ease;
+    box-shadow: var(--shadow-md);
+  }
+  
+  .btn-saudi:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .btn-gold {
+    background: var(--gradient-desert);
+    color: var(--saudi-green-dark);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    transition: all 300ms ease;
+    box-shadow: var(--shadow-md);
+  }
+  
+  .btn-gold:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  /* Text gradient styles */
+  .text-gradient-saudi {
+    background: var(--gradient-saudi);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+  }
+  
+  .text-gradient-gold {
+    background: var(--gradient-desert);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+  }
+  
+  /* Saudi divider styles */
+  .divider-saudi {
+    height: 2px;
+    background: var(--gradient-saudi);
+    border: none;
+    margin: 2rem 0;
+    opacity: 0.3;
+  }
+  
+  .divider-pattern {
+    height: 4px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--saudi-green),
+      var(--saudi-green) 10px,
+      var(--desert-gold) 10px,
+      var(--desert-gold) 20px
+    );
+    border: none;
+    margin: 2rem 0;
+  }
+  
+  /* Saudi icon containers */
+  .icon-saudi {
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: oklch(from var(--saudi-green) l c h / 0.1);
+    color: var(--saudi-green);
+    border-radius: var(--radius-md);
+    transition: all 300ms ease;
+  }
+  
+  .icon-saudi:hover {
+    background: var(--saudi-green);
+    color: var(--pearl-white);
+    transform: scale(1.1);
+  }
+  
+  .icon-gold {
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: oklch(from var(--desert-gold) l c h / 0.1);
+    color: var(--desert-gold);
+    border-radius: var(--radius-md);
+    transition: all 300ms ease;
+  }
+  
+  .icon-gold:hover {
+    background: var(--desert-gold);
+    color: var(--saudi-green-dark);
+    transform: scale(1.1);
+  }
+  
+  /* Special effects */
+  .shimmer-saudi {
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      oklch(from var(--saudi-green) l c h / 0.2) 50%,
+      transparent 60%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  .shimmer-gold {
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      oklch(from var(--desert-gold) l c h / 0.3) 50%,
+      transparent 60%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  
+  /* Status indicators with Saudi colors */
+  .status-active {
+    width: 8px;
+    height: 8px;
+    background: var(--saudi-green);
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse-saudi 2s infinite;
+  }
+  
+  @keyframes pulse-saudi {
+    0% {
+      box-shadow: 0 0 0 0 oklch(from var(--saudi-green) l c h / 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px oklch(from var(--saudi-green) l c h / 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 oklch(from var(--saudi-green) l c h / 0);
+    }
+  }
 }
