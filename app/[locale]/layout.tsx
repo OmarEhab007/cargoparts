@@ -4,6 +4,9 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { LocaleProvider } from '@/components/providers/locale-provider';
 import { CartProvider } from '@/lib/cart/cart-context';
+import { SiteHeader } from '@/components/ui/site-header';
+import { ConditionalFooter } from '@/components/ui/conditional-footer';
+import { ScrollToTop } from '@/components/ui/scroll-to-top';
 import { locales } from '@/i18n/config';
 import { Toaster } from 'sonner';
 import { Cairo, Inter } from 'next/font/google';
@@ -64,11 +67,16 @@ export default async function LocaleLayout({
       suppressHydrationWarning
       className={`${cairo.variable} ${inter.variable}`}
     >
-      <body className={locale === 'ar' ? cairo.className : inter.className}>
+      <body className={`${locale === 'ar' ? cairo.className : inter.className} min-h-screen flex flex-col`}>
         <NextIntlClientProvider messages={messages}>
           <LocaleProvider>
             <CartProvider>
-              {children}
+              <SiteHeader />
+              <main className="flex-1 relative">
+                {children}
+              </main>
+              <ConditionalFooter />
+              <ScrollToTop />
               <Toaster 
                 position={locale === 'ar' ? 'top-left' : 'top-right'}
                 dir={locale === 'ar' ? 'rtl' : 'ltr'}

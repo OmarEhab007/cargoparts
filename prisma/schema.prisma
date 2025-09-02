@@ -1,4 +1,4 @@
-// Prisma schema for Cargo Parts marketplace (POC)
+// Comprehensive Prisma schema for Cargo Parts marketplace
 
 generator client {
   provider = "prisma-client-js"
@@ -9,125 +9,939 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// --------------------
-// MODELS
-// --------------------
+// ====================
+// USER MANAGEMENT
+// ====================
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  name      String?
-  phone     String?   @unique
-  role      Role      @default(BUYER)
-  listings  Listing[]
-  orders    Order[]
-  createdAt DateTime  @default(now())
+  id              String     @id @default(cuid())
+  email           String     @unique
+  emailVerified   DateTime?
+  name            String?
+  phone           String?    @unique
+  phoneVerified   DateTime?
+  avatar          String?
+  role            Role       @default(BUYER)
+  status          UserStatus @default(ACTIVE)
+  lastLoginAt     DateTime?
+  preferredLocale String     @default("ar")
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
-  Seller Seller[]
+  // Relations
+  seller           Seller?
+  orders           Order[]
+  cartItems        CartItem[]
+  sessions         Session[]
+  otpCodes         OtpCode[]
+  notifications    Notification[]
+  messages         Message[]     @relation("UserMessages")
+  conversations    Conversation[] @relation("UserConversations")
+  reviews          Review[]
+  addresses        Address[]
+  activityLogs     ActivityLog[]
+
+  @@map("users")
 }
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model OtpCode {
+  id        String      @id @default(cuid())
+  userId    String
+  code      String
+  type      OtpType
+  expiresAt DateTime
+  attempts  Int         @default(0)
+  verified  Boolean     @default(false)
+  createdAt DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([code])
+  @@index([expiresAt])
+  @@map("otp_codes")
+}
+
+model Address {
+  id           String      @id @default(cuid())
+  userId       String
+  type         AddressType @default(SHIPPING)
+  title        String
+  firstName    String
+  lastName     String
+  company      String?
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  district     String?
+  postalCode   String?
+  country      String      @default("SA")
+  phone        String?
+  isDefault    Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+// ====================
+// SELLER MANAGEMENT
+// ====================
 
 model Seller {
-  id        String    @id @default(cuid())
-  userId    String    @unique
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  yardName  String
-  city      String
-  verified  Boolean   @default(false)
-  listings  Listing[]
-  createdAt DateTime  @default(now())
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  businessName      String
+  businessNameEn    String?
+  businessType      BusinessType       @default(SCRAPYARD)
+  commercialLicense String?
+  taxNumber         String?
+  city              String
+  district          String?
+  address           String
+  phone             String?
+  whatsapp          String?
+  description       String?
+  descriptionEn     String?
+  logo              String?
+  coverImage        String?
+  verified          Boolean            @default(false)
+  verifiedAt        DateTime?
+  status            SellerStatus       @default(PENDING_REVIEW)
+  rating            Float              @default(0)
+  reviewCount       Int                @default(0)
+  totalSales        Int                @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listings          Listing[]
+  verificationDocs  VerificationDoc[]
+  reviews           Review[]
+  analytics         SellerAnalytics[]
+  bankAccounts      BankAccount[]
+
+  @@index([userId])
+  @@index([city])
+  @@index([status])
+  @@index([verified])
+  @@map("sellers")
 }
 
-model Listing {
+model VerificationDoc {
+  id         String           @id @default(cuid())
+  sellerId   String
+  type       DocumentType
+  filename   String
+  url        String
+  status     VerificationStatus @default(PENDING)
+  reviewedBy String?
+  reviewedAt DateTime?
+  notes      String?
+  createdAt  DateTime         @default(now())
+
+  seller Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+  @@index([type])
+  @@index([status])
+  @@map("verification_docs")
+}
+
+model BankAccount {
+  id            String   @id @default(cuid())
+  sellerId      String
+  bankName      String
+  accountNumber String
+  iban          String
+  accountHolder String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  seller Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId])
+  @@map("bank_accounts")
+}
+
+// ====================
+// CATALOG MANAGEMENT
+// ====================
+
+model Category {
   id          String    @id @default(cuid())
-  sellerId    String
-  seller      Seller    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  titleAr     String
-  titleEn     String?
+  nameAr      String
+  nameEn      String?
+  slug        String    @unique
   description String?
-  priceSar    Int
-  make        String
-  model       String
-  fromYear    Int
-  toYear      Int
-  condition   Condition @default(USED)
-  city        String
-  photos      Photo[]
+  image       String?
+  parentId    String?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  OrderItem OrderItem[]
+  parent   Category?  @relation("CategoryParent", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryParent")
+  listings Listing[]
 
-  User User[]
+  @@index([parentId])
+  @@index([slug])
+  @@index([isActive])
+  @@map("categories")
+}
+
+model Make {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  nameAr    String?
+  logo      String?
+  country   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  models   Model[]
+  listings Listing[]
+
+  @@index([name])
+  @@index([isActive])
+  @@map("makes")
+}
+
+model Model {
+  id         String   @id @default(cuid())
+  makeId     String
+  name       String
+  nameAr     String?
+  generation String?
+  startYear  Int?
+  endYear    Int?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  make     Make      @relation(fields: [makeId], references: [id], onDelete: Cascade)
+  listings Listing[]
+
+  @@unique([makeId, name])
+  @@index([makeId])
+  @@index([name])
+  @@index([isActive])
+  @@map("models")
+}
+
+model Listing {
+  id            String        @id @default(cuid())
+  sellerId      String
+  categoryId    String?
+  makeId        String?
+  modelId       String?
+  sku           String?       @unique
+  titleAr       String
+  titleEn       String?
+  description   String?
+  descriptionEn String?
+  condition     Condition     @default(USED)
+  priceSar      Int
+  originalPrice Int?
+  currency      String        @default("SAR")
+  quantity      Int           @default(1)
+  minQuantity   Int           @default(1)
+  weight        Float?
+  dimensions    String?
+  
+  // Vehicle compatibility
+  make          String?
+  model         String?
+  fromYear      Int?
+  toYear        Int?
+  engineSize    String?
+  fuelType      String?
+  transmission  String?
+  bodyType      String?
+  oem_numbers   String[]      @default([])
+  
+  // Location
+  city          String
+  district      String?
+  
+  // Status and visibility
+  status        ListingStatus @default(DRAFT)
+  isActive      Boolean       @default(true)
+  isFeatured    Boolean       @default(false)
+  viewCount     Int           @default(0)
+  
+  // Timestamps
+  publishedAt   DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  seller       Seller        @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  category     Category?     @relation(fields: [categoryId], references: [id])
+  makeRef      Make?         @relation(fields: [makeId], references: [id])
+  modelRef     Model?        @relation(fields: [modelId], references: [id])
+  photos       Photo[]
+  orderItems   OrderItem[]
+  cartItems    CartItem[]
+  reviews      Review[]
+  
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([makeId])
+  @@index([modelId])
+  @@index([status])
+  @@index([isActive])
+  @@index([city])
+  @@index([make, model])
+  @@index([fromYear, toYear])
+  @@index([createdAt])
+  @@index([viewCount])
+  @@map("listings")
 }
 
 model Photo {
   id        String   @id @default(cuid())
   listingId String
-  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
   url       String
+  filename  String?
+  size      Int?
+  mimeType  String?
+  alt       String?
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([sortOrder])
+  @@map("photos")
+}
+
+// ====================
+// CART & ORDERS
+// ====================
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@map("cart_items")
 }
 
 model Order {
-  id        String      @id @default(cuid())
-  buyerId   String
-  buyer     User        @relation(fields: [buyerId], references: [id], onDelete: Cascade)
-  items     OrderItem[]
-  total     Int
-  status    OrderStatus @default(PENDING)
-  address   String
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  buyerId         String
+  sellerId        String?
+  status          OrderStatus @default(PENDING)
+  
+  // Pricing
+  subtotal        Int
+  taxAmount       Int         @default(0)
+  shippingAmount  Int         @default(0)
+  discountAmount  Int         @default(0)
+  total           Int
+  currency        String      @default("SAR")
+  
+  // Shipping
+  addressId       String?
+  shippingMethod  String?
+  trackingNumber  String?
+  estimatedDelivery DateTime?
+  
+  // Notes
+  notes           String?
+  sellerNotes     String?
+  
+  // Timestamps
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  confirmedAt     DateTime?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
 
-  Payment Payment[]
+  // Relations
+  buyer     User         @relation(fields: [buyerId], references: [id])
+  address   Address?     @relation(fields: [addressId], references: [id])
+  items     OrderItem[]
+  payments  Payment[]
+  shipments Shipment[]
+  statusHistory OrderStatusHistory[]
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([createdAt])
+  @@map("orders")
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  listingId String
-  listing   Listing @relation(fields: [listingId], references: [id])
-  qty       Int     @default(1)
-  priceSar  Int
+  id          String  @id @default(cuid())
+  orderId     String
+  listingId   String
+  quantity    Int
+  unitPrice   Int
+  totalPrice  Int
+  currency    String  @default("SAR")
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id])
+
+  @@index([orderId])
+  @@index([listingId])
+  @@map("order_items")
 }
+
+model OrderStatusHistory {
+  id          String      @id @default(cuid())
+  orderId     String
+  status      OrderStatus
+  notes       String?
+  changedBy   String?
+  createdAt   DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([createdAt])
+  @@map("order_status_history")
+}
+
+// ====================
+// PAYMENTS
+// ====================
 
 model Payment {
-  id        String        @id @default(cuid())
-  orderId   String        @unique
-  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  provider  String
-  status    PaymentStatus @default(INITIATED)
-  reference String?
-  createdAt DateTime      @default(now())
+  id              String        @id @default(cuid())
+  orderId         String
+  provider        PaymentProvider
+  providerTxId    String?
+  amount          Int
+  currency        String        @default("SAR")
+  status          PaymentStatus @default(PENDING)
+  paymentMethod   String?
+  reference       String?
+  failureReason   String?
+  processedAt     DateTime?
+  expiresAt       DateTime?
+  webhookReceived Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([provider])
+  @@index([status])
+  @@index([providerTxId])
+  @@map("payments")
 }
 
-// --------------------
+model PaymentWebhook {
+  id          String   @id @default(cuid())
+  provider    PaymentProvider
+  event       String
+  payload     String
+  signature   String?
+  processed   Boolean  @default(false)
+  error       String?
+  createdAt   DateTime @default(now())
+
+  @@index([provider])
+  @@index([processed])
+  @@index([createdAt])
+  @@map("payment_webhooks")
+}
+
+// ====================
+// SHIPPING
+// ====================
+
+model ShippingRate {
+  id            String   @id @default(cuid())
+  name          String
+  nameEn        String?
+  provider      String
+  estimatedDays Int
+  ratePerKg     Int
+  baseRate      Int
+  maxWeight     Float?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@index([provider])
+  @@index([isActive])
+  @@map("shipping_rates")
+}
+
+model Shipment {
+  id             String          @id @default(cuid())
+  orderId        String
+  carrier        String
+  trackingNumber String
+  status         ShipmentStatus  @default(PREPARING)
+  estimatedDelivery DateTime?
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([trackingNumber])
+  @@index([status])
+  @@map("shipments")
+}
+
+// ====================
+// COMMUNICATIONS
+// ====================
+
+model Conversation {
+  id        String   @id @default(cuid())
+  buyerId   String
+  sellerId  String
+  orderId   String?
+  listingId String?
+  subject   String?
+  status    ConversationStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  buyer    User      @relation("UserConversations", fields: [buyerId], references: [id])
+  messages Message[]
+
+  @@unique([buyerId, sellerId, orderId])
+  @@unique([buyerId, sellerId, listingId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([orderId])
+  @@index([listingId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  attachments    String[] @default([])
+  isRead         Boolean  @default(false)
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("UserMessages", fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+model Notification {
+  id        String             @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  titleEn   String?
+  message   String
+  messageEn String?
+  data      Json?
+  isRead    Boolean            @default(false)
+  readAt    DateTime?
+  createdAt DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ====================
+// REVIEWS & RATINGS
+// ====================
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  sellerId  String?
+  listingId String?
+  orderId   String?
+  rating    Int      // 1-5 stars
+  comment   String?
+  response  String?
+  isVerified Boolean @default(false)
+  isHidden   Boolean @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id])
+  seller  Seller?  @relation(fields: [sellerId], references: [id])
+  listing Listing? @relation(fields: [listingId], references: [id])
+
+  @@index([userId])
+  @@index([sellerId])
+  @@index([listingId])
+  @@index([orderId])
+  @@index([rating])
+  @@index([isVerified])
+  @@map("reviews")
+}
+
+// ====================
+// ANALYTICS
+// ====================
+
+model SellerAnalytics {
+  id           String   @id @default(cuid())
+  sellerId     String
+  date         DateTime
+  views        Int      @default(0)
+  inquiries    Int      @default(0)
+  orders       Int      @default(0)
+  revenue      Int      @default(0)
+  newListings  Int      @default(0)
+  totalListing Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  seller Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@unique([sellerId, date])
+  @@index([sellerId])
+  @@index([date])
+  @@map("seller_analytics")
+}
+
+model SystemAnalytics {
+  id               String   @id @default(cuid())
+  date             DateTime
+  totalUsers       Int      @default(0)
+  newUsers         Int      @default(0)
+  totalSellers     Int      @default(0)
+  newSellers       Int      @default(0)
+  totalListings    Int      @default(0)
+  newListings      Int      @default(0)
+  totalOrders      Int      @default(0)
+  newOrders        Int      @default(0)
+  totalRevenue     Int      @default(0)
+  searchQueries    Int      @default(0)
+  pageViews        Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  @@unique([date])
+  @@index([date])
+  @@map("system_analytics")
+}
+
+model ActivityLog {
+  id        String           @id @default(cuid())
+  userId    String?
+  action    ActivityType
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime         @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+// ====================
+// ADMIN & MODERATION
+// ====================
+
+model AdminAction {
+  id          String           @id @default(cuid())
+  adminId     String
+  action      AdminActionType
+  targetType  String
+  targetId    String
+  reason      String?
+  notes       String?
+  reversedBy  String?
+  reversedAt  DateTime?
+  createdAt   DateTime         @default(now())
+
+  @@index([adminId])
+  @@index([targetType, targetId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("admin_actions")
+}
+
+model ReportedContent {
+  id          String       @id @default(cuid())
+  reporterId  String
+  contentType String
+  contentId   String
+  reason      ReportReason
+  description String?
+  status      ReportStatus @default(PENDING)
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  action      String?
+  createdAt   DateTime     @default(now())
+
+  @@index([reporterId])
+  @@index([contentType, contentId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("reported_content")
+}
+
+// ====================
+// SYSTEM CONFIGURATION
+// ====================
+
+model SystemConfig {
+  key       String   @id
+  value     String
+  type      String   @default("string")
+  category  String?
+  description String?
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([category])
+  @@map("system_config")
+}
+
+model City {
+  id        String   @id @default(cuid())
+  nameAr    String
+  nameEn    String?
+  region    String
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([nameAr])
+  @@index([region])
+  @@index([isActive])
+  @@map("cities")
+}
+
+// ====================
 // ENUMS
-// --------------------
+// ====================
 
 enum Role {
   BUYER
   SELLER
   ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+  PENDING_VERIFICATION
+}
+
+enum OtpType {
+  EMAIL_VERIFICATION
+  PHONE_VERIFICATION
+  LOGIN
+  PASSWORD_RESET
+}
+
+enum AddressType {
+  SHIPPING
+  BILLING
+  BOTH
+}
+
+enum BusinessType {
+  SCRAPYARD
+  PARTS_DEALER
+  WORKSHOP
+  INDIVIDUAL
+}
+
+enum SellerStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+  BANNED
+}
+
+enum DocumentType {
+  COMMERCIAL_LICENSE
+  TAX_CERTIFICATE
+  ID_COPY
+  BANK_STATEMENT
+  LOCATION_PHOTO
+  OTHER
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum Condition {
-  USED
-  REFURBISHED
   NEW
+  LIKE_NEW
+  VERY_GOOD
+  GOOD
+  FAIR
+  POOR
+  SALVAGE
+  REFURBISHED
+  USED
+}
+
+enum ListingStatus {
+  DRAFT
+  PUBLISHED
+  SOLD
+  EXPIRED
+  SUSPENDED
+  DELETED
 }
 
 enum OrderStatus {
   PENDING
-  PAID
+  CONFIRMED
+  PROCESSING
+  READY_TO_SHIP
   SHIPPED
   DELIVERED
   CANCELLED
+  REFUNDED
+  DISPUTED
 }
 
 enum PaymentStatus {
-  INITIATED
-  SUCCESS
+  PENDING
+  PROCESSING
+  COMPLETED
   FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  TAP
+  HYPERPAY
+  MADA
+  VISA
+  MASTERCARD
+  PAYPAL
+  BANK_TRANSFER
+}
+
+enum ShipmentStatus {
+  PREPARING
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED_DELIVERY
+  RETURNED
+}
+
+enum ConversationStatus {
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum NotificationType {
+  ORDER_STATUS
+  PAYMENT_STATUS
+  MESSAGE_RECEIVED
+  LISTING_EXPIRED
+  SELLER_VERIFIED
+  SYSTEM_ANNOUNCEMENT
+  PROMOTION
+}
+
+enum ActivityType {
+  USER_REGISTERED
+  USER_LOGIN
+  USER_LOGOUT
+  LISTING_CREATED
+  LISTING_UPDATED
+  ORDER_PLACED
+  PAYMENT_COMPLETED
+  MESSAGE_SENT
+  REVIEW_SUBMITTED
+}
+
+enum AdminActionType {
+  USER_BANNED
+  USER_UNBANNED
+  SELLER_APPROVED
+  SELLER_REJECTED
+  LISTING_SUSPENDED
+  LISTING_APPROVED
+  CONTENT_REMOVED
+}
+
+enum ReportReason {
+  SPAM
+  INAPPROPRIATE_CONTENT
+  FAKE_LISTING
+  FRAUD
+  HARASSMENT
+  COPYRIGHT
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
 }

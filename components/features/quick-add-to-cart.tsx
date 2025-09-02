@@ -27,9 +27,10 @@ interface QuickAddToCartProps {
   className?: string;
   size?: 'default' | 'sm' | 'lg' | 'icon';
   variant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'destructive';
+  disabled?: boolean;
 }
 
-export function QuickAddToCart({ listing, className, size = 'default', variant = 'default' }: QuickAddToCartProps) {
+export function QuickAddToCart({ listing, className, size = 'default', variant = 'default', disabled = false }: QuickAddToCartProps) {
   const locale = useLocale();
   const isArabic = locale === 'ar';
   const { addItem, isInCart } = useCart();
@@ -82,6 +83,7 @@ export function QuickAddToCart({ listing, className, size = 'default', variant =
       onClick={handleAddToCart}
       size={size}
       variant={inCart ? 'secondary' : variant}
+      disabled={disabled}
       className={cn(
         'transition-all',
         added && 'animate-pulse',

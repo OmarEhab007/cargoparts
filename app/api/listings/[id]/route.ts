@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { listingService } from '@/lib/catalog/listing-service';
+import { ListingService } from '@/lib/catalog/listing-service';
 import { z } from 'zod';
 import { Condition } from '@prisma/client';
 
@@ -10,7 +10,7 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const listing = await listingService.getListingById(id);
+    const listing = await ListingService.getListingById(id);
     
     if (!listing) {
       return NextResponse.json(
@@ -49,7 +49,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
     const data = updateListingSchema.parse(body);
     
-    const listing = await listingService.updateListing({
+    const listing = await ListingService.updateListing({
       id,
       ...data,
     });
@@ -75,7 +75,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
-    await listingService.deleteListing(id);
+    await ListingService.deleteListing(id);
     
     return NextResponse.json({ success: true });
   } catch (error) {

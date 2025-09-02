@@ -83,88 +83,7 @@ interface NavItem {
   }[];
 }
 
-const navigationItems: NavItem[] = [
-  {
-    id: 'dashboard',
-    labelAr: 'لوحة التحكم',
-    labelEn: 'Dashboard',
-    icon: LayoutDashboard,
-    href: '/seller/dashboard',
-  },
-  {
-    id: 'inventory',
-    labelAr: 'المخزون',
-    labelEn: 'Inventory',
-    icon: Package,
-    href: '/seller/inventory',
-    badge: '15',
-    subItems: [
-      { labelAr: 'جميع القطع', labelEn: 'All Parts', href: '/seller/inventory' },
-      { labelAr: 'إضافة قطعة', labelEn: 'Add Part', href: '/seller/inventory/new' },
-      { labelAr: 'المنخفض', labelEn: 'Low Stock', href: '/seller/inventory/low-stock', badge: '3' },
-      { labelAr: 'الأرشيف', labelEn: 'Archived', href: '/seller/inventory/archived' },
-    ],
-  },
-  {
-    id: 'orders',
-    labelAr: 'الطلبات',
-    labelEn: 'Orders',
-    icon: ShoppingCart,
-    href: '/seller/orders',
-    badge: '5',
-    badgeType: 'destructive',
-    subItems: [
-      { labelAr: 'جميع الطلبات', labelEn: 'All Orders', href: '/seller/orders' },
-      { labelAr: 'قيد الانتظار', labelEn: 'Pending', href: '/seller/orders/pending', badge: '5' },
-      { labelAr: 'قيد المعالجة', labelEn: 'Processing', href: '/seller/orders/processing' },
-      { labelAr: 'تم الشحن', labelEn: 'Shipped', href: '/seller/orders/shipped' },
-      { labelAr: 'المرتجعات', labelEn: 'Returns', href: '/seller/orders/returns' },
-    ],
-  },
-  {
-    id: 'analytics',
-    labelAr: 'التحليلات',
-    labelEn: 'Analytics',
-    icon: BarChart3,
-    href: '/seller/analytics',
-    subItems: [
-      { labelAr: 'نظرة عامة', labelEn: 'Overview', href: '/seller/analytics' },
-      { labelAr: 'المبيعات', labelEn: 'Sales', href: '/seller/analytics/sales' },
-      { labelAr: 'المنتجات', labelEn: 'Products', href: '/seller/analytics/products' },
-      { labelAr: 'العملاء', labelEn: 'Customers', href: '/seller/analytics/customers' },
-      { labelAr: 'التقارير', labelEn: 'Reports', href: '/seller/analytics/reports' },
-    ],
-  },
-  {
-    id: 'messages',
-    labelAr: 'الرسائل',
-    labelEn: 'Messages',
-    icon: MessageSquare,
-    href: '/seller/messages',
-    badge: '2',
-    badgeType: 'secondary',
-  },
-  {
-    id: 'finance',
-    labelAr: 'المالية',
-    labelEn: 'Finance',
-    icon: DollarSign,
-    href: '/seller/finance',
-    subItems: [
-      { labelAr: 'نظرة عامة', labelEn: 'Overview', href: '/seller/finance' },
-      { labelAr: 'المعاملات', labelEn: 'Transactions', href: '/seller/finance/transactions' },
-      { labelAr: 'الفواتير', labelEn: 'Invoices', href: '/seller/finance/invoices' },
-      { labelAr: 'الضرائب', labelEn: 'Tax', href: '/seller/finance/tax' },
-    ],
-  },
-  {
-    id: 'settings',
-    labelAr: 'الإعدادات',
-    labelEn: 'Settings',
-    icon: Settings,
-    href: '/seller/settings',
-  },
-];
+// Navigation items are now generated dynamically by getNavigationItems()
 
 interface SellerInfo {
   name: string;
@@ -182,6 +101,33 @@ interface QuickStats {
   lowStockItems: number;
 }
 
+interface CountsData {
+  orders: {
+    pending: number;
+    processing: number;
+    ready: number;
+    shipped: number;
+    completed: number;
+    returns: number;
+    total: number;
+  };
+  inventory: {
+    total: number;
+    draft: number;
+    lowStock: number;
+    outOfStock: number;
+    archived: number;
+  };
+  messages: {
+    unread: number;
+  };
+  summary: {
+    activeOrders: number;
+    urgentActions: number;
+    totalProducts: number;
+  };
+}
+
 export default function SellerAdminLayout({
   children,
 }: {
@@ -197,6 +143,9 @@ export default function SellerAdminLayout({
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(3);
+  const [isMobile, setIsMobile] = useState(false);
+  const [countsData, setCountsData] = useState<CountsData | null>(null);
+  const [sellerId, setSellerId] = useState<string | null>(null);
   
   const [sellerInfo] = useState<SellerInfo>({
     name: 'أحمد محمد',
@@ -212,6 +161,229 @@ export default function SellerAdminLayout({
     pendingOrders: 5,
     lowStockItems: 3,
   });
+
+  // Fetch seller information and counts
+  useEffect(() => {
+    const fetchSellerData = async () => {
+      try {
+        // Get current user and seller info
+        const userResponse = await fetch('/api/auth/me');
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          if (userData.data.user.role === 'SELLER') {
+            // Get seller profile to get seller ID
+            const sellerResponse = await fetch('/api/sellers/me');
+            if (sellerResponse.ok) {
+              const sellerData = await sellerResponse.json();
+              setSellerId(sellerData.data.id);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching seller info:', error);
+      }
+    };
+
+    fetchSellerData();
+  }, []);
+
+  // Fetch counts data when seller ID is available
+  useEffect(() => {
+    if (!sellerId) return;
+    
+    const fetchCounts = async () => {
+      try {
+        const response = await fetch(`/api/sellers/${sellerId}/counts`);
+        if (response.ok) {
+          const counts = await response.json();
+          setCountsData(counts.data);
+        }
+      } catch (error) {
+        console.error('Error fetching counts:', error);
+      }
+    };
+
+    fetchCounts();
+    
+    // Refresh counts every 30 seconds
+    const interval = setInterval(fetchCounts, 30000);
+    return () => clearInterval(interval);
+  }, [sellerId]);
+
+  // Generate navigation items with dynamic badges
+  const getNavigationItems = (): NavItem[] => [
+    {
+      id: 'dashboard',
+      labelAr: 'الرئيسية',
+      labelEn: 'Overview',
+      icon: LayoutDashboard,
+      href: '/seller/dashboard',
+    },
+    {
+      id: 'inventory',
+      labelAr: 'المخزون',
+      labelEn: 'Inventory',
+      icon: Package,
+      href: '/seller/inventory',
+      badge: countsData?.inventory.total || 0,
+      subItems: [
+        { labelAr: 'جميع المنتجات', labelEn: 'All Products', href: '/seller/inventory' },
+        { labelAr: 'إضافة منتج', labelEn: 'Add Product', href: '/seller/inventory/new' },
+        { 
+          labelAr: 'مخزون منخفض', 
+          labelEn: 'Low Stock', 
+          href: '/seller/inventory/low-stock', 
+          badge: countsData?.inventory.lowStock || 0
+        },
+        { 
+          labelAr: 'غير متوفر', 
+          labelEn: 'Out of Stock', 
+          href: '/seller/inventory/out-of-stock', 
+          badge: countsData?.inventory.outOfStock || 0
+        },
+        { labelAr: 'الأرشيف', labelEn: 'Archived', href: '/seller/inventory/archived' },
+      ],
+    },
+    {
+      id: 'orders',
+      labelAr: 'الطلبات',
+      labelEn: 'Orders',
+      icon: ShoppingCart,
+      href: '/seller/orders',
+      badge: countsData?.summary.activeOrders || 0,
+      badgeType: (countsData?.summary.activeOrders || 0) > 0 ? 'destructive' : 'outline',
+      subItems: [
+        { labelAr: 'جميع الطلبات', labelEn: 'All Orders', href: '/seller/orders' },
+        { 
+          labelAr: 'جديد', 
+          labelEn: 'New', 
+          href: '/seller/orders/new', 
+          badge: countsData?.orders.pending || 0
+        },
+        { 
+          labelAr: 'قيد التحضير', 
+          labelEn: 'Processing', 
+          href: '/seller/orders/processing', 
+          badge: countsData?.orders.processing || 0
+        },
+        { 
+          labelAr: 'جاهز للشحن', 
+          labelEn: 'Ready to Ship', 
+          href: '/seller/orders/ready', 
+          badge: countsData?.orders.ready || 0
+        },
+        { labelAr: 'تم الشحن', labelEn: 'Shipped', href: '/seller/orders/shipped' },
+        { labelAr: 'مكتمل', labelEn: 'Completed', href: '/seller/orders/completed' },
+        { 
+          labelAr: 'المرتجعات', 
+          labelEn: 'Returns', 
+          href: '/seller/orders/returns', 
+          badge: countsData?.orders.returns || 0
+        },
+      ],
+    },
+    {
+      id: 'customers',
+      labelAr: 'إدارة العملاء',
+      labelEn: 'Customer Management',
+      icon: Users,
+      href: '/seller/customers',
+      badge: countsData?.activity.newCustomers || 0,
+      subItems: [
+        { labelAr: 'جميع العملاء', labelEn: 'All Customers', href: '/seller/customers' },
+        { labelAr: 'عملاء VIP', labelEn: 'VIP Customers', href: '/seller/customers/vip' },
+        { labelAr: 'العملاء الجدد', labelEn: 'New Customers', href: '/seller/customers/new' },
+        { labelAr: 'العملاء النشطون', labelEn: 'Active Customers', href: '/seller/customers/active' },
+        { labelAr: 'التقييمات والمراجعات', labelEn: 'Reviews & Ratings', href: '/seller/customers/reviews' },
+      ],
+    },
+    {
+      id: 'messages',
+      labelAr: 'الرسائل والدعم',
+      labelEn: 'Messages & Support',
+      icon: MessageSquare,
+      href: '/seller/messages',
+      badge: countsData?.messages.unread || 0,
+      badgeType: (countsData?.messages.unread || 0) > 0 ? 'destructive' : 'outline',
+      subItems: [
+        { labelAr: 'جميع المحادثات', labelEn: 'All Conversations', href: '/seller/messages' },
+        { 
+          labelAr: 'الرسائل النشطة', 
+          labelEn: 'Active Messages', 
+          href: '/seller/messages/active', 
+          badge: countsData?.messages.unread || 0
+        },
+        { labelAr: 'الرسائل المعلقة', labelEn: 'Pending Messages', href: '/seller/messages/pending' },
+        { labelAr: 'الاستفسارات', labelEn: 'Inquiries', href: '/seller/messages/inquiries' },
+        { labelAr: 'الشكاوى', labelEn: 'Complaints', href: '/seller/messages/complaints' },
+      ],
+    },
+    {
+      id: 'shipping',
+      labelAr: 'الشحن واللوجستيات',
+      labelEn: 'Shipping & Logistics',
+      icon: Truck,
+      href: '/seller/shipping',
+      badge: countsData?.orders.shipped || 0,
+      subItems: [
+        { labelAr: 'نظرة عامة', labelEn: 'Overview', href: '/seller/shipping' },
+        { labelAr: 'شركات الشحن', labelEn: 'Shipping Providers', href: '/seller/shipping/providers' },
+        { labelAr: 'مناطق الشحن', labelEn: 'Shipping Zones', href: '/seller/shipping/zones' },
+        { labelAr: 'تتبع الشحنات', labelEn: 'Track Shipments', href: '/seller/shipping/tracking' },
+        { labelAr: 'تحليلات الشحن', labelEn: 'Shipping Analytics', href: '/seller/shipping/analytics' },
+      ],
+    },
+    {
+      id: 'analytics',
+      labelAr: 'التحليلات والتقارير',
+      labelEn: 'Analytics & Reports',
+      icon: BarChart3,
+      href: '/seller/analytics',
+      subItems: [
+        { labelAr: 'نظرة شاملة', labelEn: 'Business Overview', href: '/seller/analytics' },
+        { labelAr: 'تحليل المبيعات', labelEn: 'Sales Analytics', href: '/seller/analytics/sales' },
+        { labelAr: 'أداء المنتجات', labelEn: 'Product Performance', href: '/seller/analytics/products' },
+        { labelAr: 'تحليل العملاء', labelEn: 'Customer Insights', href: '/seller/analytics/customers' },
+        { labelAr: 'التقارير المالية', labelEn: 'Financial Reports', href: '/seller/analytics/financial' },
+        { labelAr: 'تحليل المخزون', labelEn: 'Inventory Analytics', href: '/seller/analytics/inventory' },
+      ],
+    },
+    {
+      id: 'finance',
+      labelAr: 'المالية والمدفوعات',
+      labelEn: 'Finance & Payments',
+      icon: DollarSign,
+      href: '/seller/financials',
+      subItems: [
+        { labelAr: 'الملخص المالي', labelEn: 'Financial Overview', href: '/seller/financials' },
+        { labelAr: 'المعاملات', labelEn: 'Transactions', href: '/seller/financials/transactions' },
+        { labelAr: 'المدفوعات والسحوبات', labelEn: 'Payments & Payouts', href: '/seller/financials/payouts' },
+        { labelAr: 'المصروفات', labelEn: 'Expenses', href: '/seller/financials/expenses' },
+        { labelAr: 'التقارير المالية', labelEn: 'Financial Reports', href: '/seller/financials/reports' },
+      ],
+    },
+    {
+      id: 'profile',
+      labelAr: 'الملف التجاري',
+      labelEn: 'Business Profile',
+      icon: Store,
+      href: '/seller/profile',
+      subItems: [
+        { labelAr: 'المعلومات العامة', labelEn: 'General Information', href: '/seller/profile' },
+        { labelAr: 'معلومات الأعمال', labelEn: 'Business Details', href: '/seller/profile/business' },
+        { labelAr: 'معلومات الاتصال', labelEn: 'Contact Information', href: '/seller/profile/contact' },
+        { labelAr: 'الإعدادات', labelEn: 'Settings', href: '/seller/profile/settings' },
+        { labelAr: 'الأمان والتحقق', labelEn: 'Security & Verification', href: '/seller/profile/security' },
+      ],
+    },
+    {
+      id: 'settings',
+      labelAr: 'الإعدادات العامة',
+      labelEn: 'General Settings',
+      icon: Settings,
+      href: '/seller/settings',
+    },
+  ];
   
   useEffect(() => {
     // Check for saved theme preference
@@ -220,6 +392,18 @@ export default function SellerAdminLayout({
       setDarkMode(true);
       document.documentElement.classList.add('dark');
     }
+    
+    // Mobile detection and responsive handling
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+      if (window.innerWidth < 1024) {
+        setCollapsed(true);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
   
   const toggleTheme = () => {
@@ -294,13 +478,13 @@ export default function SellerAdminLayout({
         {/* Quick Stats */}
         {!collapsed && (
           <div className="grid grid-cols-2 gap-2">
-            <div className="p-2 bg-muted/50 rounded-lg">
-              <p className="text-xs text-muted-foreground">{isArabic ? 'اليوم' : 'Today'}</p>
-              <p className="text-sm font-bold">{quickStats.todayRevenue.toLocaleString()} SAR</p>
+            <div className="p-3 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/30 rounded-lg border border-green-200/50 dark:border-green-800/30">
+              <p className="text-xs text-green-700 dark:text-green-300 font-medium">{isArabic ? 'إيرادات اليوم' : 'Today\'s Revenue'}</p>
+              <p className="text-sm font-bold text-green-800 dark:text-green-200">{quickStats.todayRevenue.toLocaleString()} SAR</p>
             </div>
-            <div className="p-2 bg-muted/50 rounded-lg">
-              <p className="text-xs text-muted-foreground">{isArabic ? 'الطلبات' : 'Orders'}</p>
-              <p className="text-sm font-bold">{quickStats.todayOrders}</p>
+            <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/30 rounded-lg border border-blue-200/50 dark:border-blue-800/30">
+              <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">{isArabic ? 'الطلبات' : 'Orders'}</p>
+              <p className="text-sm font-bold text-blue-800 dark:text-blue-200">{quickStats.todayOrders}</p>
             </div>
           </div>
         )}
@@ -309,7 +493,7 @@ export default function SellerAdminLayout({
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-4">
         <nav className="space-y-1">
-          {navigationItems.map((item) => {
+          {getNavigationItems().map((item) => {
             const Icon = item.icon;
             const hasSubItems = item.subItems && item.subItems.length > 0;
             const isExpanded = expandedItems.has(item.id);
@@ -445,10 +629,22 @@ export default function SellerAdminLayout({
         <SidebarContent />
       </aside>
       
-      {/* Mobile Sidebar */}
+      {/* Mobile Sidebar - Enhanced */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side={isArabic ? 'right' : 'left'} className="w-64 p-0">
-          <SidebarContent />
+        <SheetContent 
+          side={isArabic ? 'right' : 'left'} 
+          className="w-80 sm:w-64 p-0 overflow-hidden"
+        >
+          <div className="flex flex-col h-full">
+            <SheetHeader className="p-4 border-b">
+              <SheetTitle className="text-start">
+                {isArabic ? 'قائمة التنقل' : 'Navigation Menu'}
+              </SheetTitle>
+            </SheetHeader>
+            <div className="flex-1 overflow-auto">
+              <SidebarContent />
+            </div>
+          </div>
         </SheetContent>
       </Sheet>
       
@@ -466,27 +662,45 @@ export default function SellerAdminLayout({
               <Menu className="h-5 w-5" />
             </Button>
             
-            {/* Search */}
-            <div className="relative hidden sm:block">
+            {/* Search - Enhanced for mobile */}
+            <div className="relative flex-1 sm:flex-none max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="search"
-                placeholder={isArabic ? 'بحث...' : 'Search...'}
-                className="pl-10 pr-4 py-2 bg-muted/50 border rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder={isArabic ? 'بحث في المنتجات والطلبات...' : 'Search products, orders...'}
+                className="pl-10 pr-4 py-2 bg-muted/50 border rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-background transition-colors"
               />
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            {/* Quick Actions */}
-            <Button variant="ghost" size="icon" onClick={() => window.location.reload()}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Quick Actions - Condensed for mobile */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => window.location.reload()}>
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isArabic ? 'تحديث' : 'Refresh'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             
             {/* Theme Toggle */}
-            <Button variant="ghost" size="icon" onClick={toggleTheme}>
-              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={toggleTheme}>
+                    {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isArabic ? 'تبديل المظهر' : 'Toggle Theme'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             
             {/* Notifications */}
             <DropdownMenu>
@@ -500,56 +714,88 @@ export default function SellerAdminLayout({
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80">
-                <DropdownMenuLabel>{isArabic ? 'الإشعارات' : 'Notifications'}</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-96 sm:w-80 max-h-96 overflow-y-auto">
+                <DropdownMenuLabel className="flex items-center justify-between">
+                  <span>{isArabic ? 'الإشعارات' : 'Notifications'}</span>
+                  <Badge variant="secondary" className="ml-2">{notifications}</Badge>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <div className="flex gap-3">
-                    <ShoppingCart className="h-4 w-4 text-blue-500 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{isArabic ? 'طلب جديد' : 'New Order'}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {isArabic ? 'طلب #ORD001 من أحمد محمد' : 'Order #ORD001 from Ahmed Mohammed'}
+                
+                {/* High Priority - New Orders */}
+                <DropdownMenuItem className="p-3 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/50">
+                  <div className="flex gap-3 w-full">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
+                      <ShoppingCart className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                        {isArabic ? 'طلب جديد عاجل' : 'Urgent New Order'}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {isArabic ? 'منذ 5 دقائق' : '5 minutes ago'}
+                      <p className="text-xs text-muted-foreground truncate">
+                        {isArabic ? 'طلب #ORD2024-156 محرك كامري - 8,500 ريال' : 'Order #ORD2024-156 Camry Engine - 8,500 SAR'}
                       </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Clock className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          {isArabic ? 'منذ 5 دقائق' : '5 min ago'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <div className="flex gap-3">
-                    <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{isArabic ? 'مخزون منخفض' : 'Low Stock Alert'}</p>
+                
+                {/* Warning - Low Stock */}
+                <DropdownMenuItem className="p-3 cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-950/50">
+                  <div className="flex gap-3 w-full">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900">
+                      <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                        {isArabic ? 'تنبيه مخزون منخفض' : 'Low Stock Alert'}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {isArabic ? '3 منتجات تحتاج إعادة تخزين' : '3 products need restocking'}
+                        {isArabic ? '6 منتجات تحتاج إعادة تخزين فوري' : '6 products need immediate restocking'}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {isArabic ? 'منذ ساعة' : '1 hour ago'}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Clock className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          {isArabic ? 'منذ ساعة' : '1 hour ago'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <div className="flex gap-3">
-                    <MessageSquare className="h-4 w-4 text-green-500 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{isArabic ? 'رسالة جديدة' : 'New Message'}</p>
+                
+                {/* Success - New Review */}
+                <DropdownMenuItem className="p-3 cursor-pointer hover:bg-green-50 dark:hover:bg-green-950/50">
+                  <div className="flex gap-3 w-full">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+                      <Star className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-green-900 dark:text-green-100">
+                        {isArabic ? 'تقييم 5 نجوم جديد!' : 'New 5-star Review!'}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {isArabic ? 'سؤال عن محرك تويوتا' : 'Question about Toyota engine'}
+                        {isArabic ? '"خدمة ممتازة وقطع أصلية"' : '"Excellent service and genuine parts"'}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {isArabic ? 'منذ ساعتين' : '2 hours ago'}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Clock className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          {isArabic ? 'منذ 30 دقيقة' : '30 min ago'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </DropdownMenuItem>
+                
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-center">
-                  <span className="w-full text-sm text-primary">
-                    {isArabic ? 'عرض جميع الإشعارات' : 'View all notifications'}
-                  </span>
+                <DropdownMenuItem className="text-center p-3">
+                  <Button variant="ghost" className="w-full text-sm">
+                    {isArabic ? 'عرض جميع الإشعارات' : 'View All Notifications'}
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

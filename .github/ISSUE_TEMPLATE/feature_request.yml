@@ -1,0 +1,183 @@
+name: ✨ Feature Request
+description: Suggest a new feature or improvement for Cargo Parts
+title: "[Feature]: "
+labels: ["enhancement", "feature-request"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide as much detail as possible to help us understand your request.
+
+  - type: checkboxes
+    attributes:
+      label: Prerequisites
+      description: Please confirm the following before submitting your feature request
+      options:
+        - label: I have searched existing issues to make sure this feature hasn't been requested already
+          required: true
+        - label: I have checked the project roadmap to see if this is already planned
+          required: true
+        - label: This feature aligns with the project's goals and Saudi market focus
+          required: true
+
+  - type: textarea
+    attributes:
+      label: Feature Summary
+      description: A clear and concise description of the feature you'd like to see
+      placeholder: Briefly describe the feature...
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What's the current pain point?
+      placeholder: |
+        As a [user type], I want to [do something] so that [I can achieve some goal].
+        
+        Currently, users have to [describe current limitation]...
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Proposed Solution
+      description: Describe your proposed solution in detail
+      placeholder: |
+        I propose we add [feature] that would work like this:
+        
+        1. User does X
+        2. System responds with Y
+        3. User achieves Z
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: User Type
+      description: Which type of user would primarily benefit from this feature?
+      options:
+        - Buyers/Customers
+        - Sellers/Vendors
+        - Administrators
+        - All users
+        - Developers/API users
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Feature Category
+      description: Which category best describes this feature?
+      options:
+        - User Interface/Experience
+        - Search & Discovery
+        - Product Management
+        - Order & Payment
+        - Communication & Messaging
+        - Analytics & Reporting
+        - Security & Authentication
+        - Mobile/Responsive
+        - Arabic/RTL Support
+        - Integration/API
+        - Performance
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would improve experience significantly
+        - High - Important for business success
+        - Critical - Blocking adoption/usage
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Use Cases
+      description: Describe specific use cases for this feature
+      placeholder: |
+        Use Case 1: When a seller...
+        Use Case 2: When a buyer...
+        Use Case 3: When an admin...
+
+  - type: textarea
+    attributes:
+      label: Acceptance Criteria
+      description: What would make this feature complete? What should it be able to do?
+      placeholder: |
+        - [ ] Feature should do X
+        - [ ] Feature should handle Y scenario
+        - [ ] Feature should support Arabic/English
+        - [ ] Feature should work on mobile devices
+
+  - type: textarea
+    attributes:
+      label: Alternative Solutions
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: Describe any alternative approaches you've considered...
+
+  - type: checkboxes
+    attributes:
+      label: Technical Considerations
+      description: Check any technical aspects that should be considered
+      options:
+        - label: Requires database changes
+        - label: Requires API changes
+        - label: Affects mobile experience
+        - label: Requires third-party integration
+        - label: Has security implications
+        - label: Affects performance
+        - label: Requires new dependencies
+        - label: Affects Arabic/RTL layout
+
+  - type: textarea
+    attributes:
+      label: Mockups/Examples
+      description: If you have mockups, wireframes, or examples from other apps, please share them
+      placeholder: Drag and drop images or provide links to examples...
+
+  - type: dropdown
+    attributes:
+      label: Saudi Market Relevance
+      description: How relevant is this feature to the Saudi Arabian market?
+      options:
+        - Highly relevant - Addresses local business practices
+        - Moderately relevant - Improves experience for Saudi users
+        - Generally relevant - Benefits all users including Saudi
+        - Not specific to Saudi market
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Business Impact
+      description: How would this feature impact the business or users?
+      placeholder: |
+        - Potential to increase user engagement by X%
+        - Could reduce support tickets by Y%
+        - Would enable new revenue streams
+        - Improves seller conversion rates
+
+  - type: checkboxes
+    attributes:
+      label: Implementation Offer
+      description: Are you interested in helping implement this feature?
+      options:
+        - label: I would like to work on this feature
+        - label: I can provide design/UX input
+        - label: I can help with testing
+        - label: I can provide domain expertise
+        - label: I prefer others implement this
+
+  - type: textarea
+    attributes:
+      label: Additional Context
+      description: Any additional information, research, or context
+      placeholder: Links to research, competitor analysis, user feedback, etc.

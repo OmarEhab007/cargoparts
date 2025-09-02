@@ -20,6 +20,7 @@ export default async function OrderSuccessPage({ params }: PageProps) {
     where: { id },
     include: {
       buyer: true,
+      address: true,
       items: {
         include: {
           listing: {
@@ -98,12 +99,12 @@ export default async function OrderSuccessPage({ params }: PageProps) {
                         {isArabic ? item.listing.titleAr : item.listing.titleEn || item.listing.titleAr}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {isArabic ? 'الكمية:' : 'Quantity:'} {item.qty} • 
-                        {' '}{isArabic ? 'البائع:' : 'Seller:'} {item.listing.seller.yardName}
+                        {isArabic ? 'الكمية:' : 'Quantity:'} {item.quantity} • 
+                        {' '}{isArabic ? 'البائع:' : 'Seller:'} {item.listing.seller.businessName}
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
-                      {(item.priceSar * item.qty).toLocaleString(isArabic ? 'ar-SA' : 'en-US')}
+                      {item.totalPrice.toLocaleString(isArabic ? 'ar-SA' : 'en-US')}
                       <SARSymbol className="h-4 w-4" />
                     </div>
                   </div>
@@ -146,7 +147,7 @@ export default async function OrderSuccessPage({ params }: PageProps) {
             )}
             <div className="flex items-start gap-2">
               <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
-              <span>{order.address}</span>
+              <span>{order.address ? `${order.address.addressLine1}${order.address.addressLine2 ? ', ' + order.address.addressLine2 : ''}, ${order.address.city}` : 'No address'}</span>
             </div>
           </CardContent>
         </Card>

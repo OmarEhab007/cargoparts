@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SARSymbol } from '@/components/ui/currency-symbol';
+import { cn } from '@/lib/utils';
 import { 
   Package, 
   ShoppingCart,
@@ -35,6 +37,79 @@ import {
 } from 'recharts';
 
 // Analytics data interfaces
+interface DashboardData {
+  overview: {
+    totalViews: number;
+    totalInquiries: number;
+    totalOrders: number;
+    totalRevenue: number;
+    totalNewListings: number;
+    activeListings: number;
+    averageRating: number;
+    totalReviews: number;
+    totalSales: number;
+    isVerified: boolean;
+  };
+  growth: {
+    viewsGrowth: number;
+    inquiriesGrowth: number;
+    ordersGrowth: number;
+    revenueGrowth: number;
+  };
+  chartData: Array<{
+    date: string;
+    views: number;
+    inquiries: number;
+    orders: number;
+    revenue: number;
+  }>;
+  topListings: Array<{
+    id: string;
+    title: string;
+    titleEn?: string;
+    views: number;
+    price: number;
+    image: string | null;
+  }>;
+  period: {
+    startDate: string;
+    endDate: string;
+    period: string;
+  };
+}
+
+interface CountsData {
+  orders: {
+    pending: number;
+    processing: number;
+    ready: number;
+    shipped: number;
+    completed: number;
+    returns: number;
+    total: number;
+  };
+  inventory: {
+    total: number;
+    draft: number;
+    lowStock: number;
+    outOfStock: number;
+    archived: number;
+  };
+  messages: {
+    unread: number;
+  };
+  activity: {
+    recentViews: number;
+    recentInquiries: number;
+    newCustomers: number;
+  };
+  summary: {
+    activeOrders: number;
+    urgentActions: number;
+    totalProducts: number;
+  };
+}
+
 interface DashboardStats {
   totalRevenue: number;
   revenueChange: number;
@@ -81,10 +156,347 @@ const statusLabels: Record<string, Record<string, string>> = {
   CANCELLED: { ar: 'ملغي', en: 'Cancelled' },
 };
 
-import EnhancedDashboard from './enhanced-page';
-
 export default function SellerDashboardPage() {
-  return <EnhancedDashboard />;
+  const locale = useLocale();
+  const router = useRouter();
+  const isArabic = locale === 'ar';
+  
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [countsData, setCountsData] = useState<CountsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [sellerId, setSellerId] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState('30d');
+  
+  // Fetch seller information and dashboard data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Get current user and seller info
+        const userResponse = await fetch('/api/auth/me');
+        if (!userResponse.ok) {
+          router.push(`/${locale}/auth/login`);
+          return;
+        }
+        
+        const userData = await userResponse.json();
+        if (userData.data.user.role !== 'SELLER') {
+          router.push(`/${locale}`);
+          return;
+        }
+
+        // Get seller profile to get seller ID
+        const sellerResponse = await fetch('/api/sellers/me');
+        if (!sellerResponse.ok) {
+          console.error('Failed to fetch seller profile');
+          return;
+        }
+        
+        const sellerData = await sellerResponse.json();
+        setSellerId(sellerData.data.id);
+        
+      } catch (error) {
+        console.error('Error fetching seller info:', error);
+        router.push(`/${locale}/auth/login`);
+      }
+    };
+
+    fetchData();
+  }, [locale, router]);
+
+  // Fetch dashboard analytics when seller ID is available
+  useEffect(() => {
+    if (!sellerId) return;
+    
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        const [analyticsResponse, countsResponse] = await Promise.all([
+          fetch(`/api/sellers/${sellerId}/analytics?period=${timeRange}`),
+          fetch(`/api/sellers/${sellerId}/counts`)
+        ]);
+        
+        if (analyticsResponse.ok) {
+          const analytics = await analyticsResponse.json();
+          setDashboardData(analytics.data);
+        }
+        
+        if (countsResponse.ok) {
+          const counts = await countsResponse.json();
+          setCountsData(counts.data);
+        }
+        
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [sellerId, timeRange]);
+
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString(isArabic ? 'ar-SA' : 'en-US');
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span>{isArabic ? 'جار التحميل...' : 'Loading...'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">
+            {isArabic ? 'لوحة التحكم' : 'Dashboard'}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            {isArabic ? 'نظرة عامة على أداء متجرك' : 'Overview of your store performance'}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">{isArabic ? 'آخر 7 أيام' : 'Last 7 days'}</SelectItem>
+              <SelectItem value="30d">{isArabic ? 'آخر 30 يوم' : 'Last 30 days'}</SelectItem>
+              <SelectItem value="90d">{isArabic ? 'آخر 90 يوم' : 'Last 90 days'}</SelectItem>
+              <SelectItem value="1y">{isArabic ? 'السنة الماضية' : 'Last year'}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            <Download className="me-2 h-4 w-4" />
+            {isArabic ? 'تحديث' : 'Refresh'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Quick Actions Alert */}
+      {countsData && countsData.summary.urgentActions > 0 && (
+        <Card className="border-amber-200 bg-amber-50/50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-5 w-5 text-amber-600">⚠️</div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-amber-800">
+                  {isArabic ? 'تحتاج انتباه فوري' : 'Requires Immediate Attention'}
+                </h3>
+                <p className="text-sm text-amber-700">
+                  {isArabic 
+                    ? `${countsData.summary.urgentActions} عنصر يحتاج اهتمامك`
+                    : `${countsData.summary.urgentActions} items need your attention`}
+                </p>
+              </div>
+              <Button size="sm" asChild>
+                <Link href={`/${locale}/seller/inventory?tab=low-stock`}>
+                  {isArabic ? 'عرض الآن' : 'View Now'}
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Key Metrics */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {isArabic ? 'إجمالي الإيرادات' : 'Total Revenue'}
+            </CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold flex items-center gap-2">
+              {formatCurrency(dashboardData?.overview.totalRevenue || 0)}
+              <SARSymbol className="h-5 w-5" />
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              {(dashboardData?.growth.revenueGrowth || 0) > 0 ? (
+                <ArrowUpRight className="h-4 w-4 text-green-600" />
+              ) : (
+                <ArrowDownRight className="h-4 w-4 text-red-600" />
+              )}
+              <span className={cn(
+                "font-medium",
+                (dashboardData?.growth.revenueGrowth || 0) > 0 ? "text-green-600" : "text-red-600"
+              )}>
+                {Math.abs(dashboardData?.growth.revenueGrowth || 0)}%
+              </span>
+              <span>{isArabic ? 'من الفترة السابقة' : 'from last period'}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {isArabic ? 'إجمالي الطلبات' : 'Total Orders'}
+            </CardTitle>
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {dashboardData?.overview.totalOrders || 0}
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              {(dashboardData?.growth.ordersGrowth || 0) > 0 ? (
+                <ArrowUpRight className="h-4 w-4 text-green-600" />
+              ) : (
+                <ArrowDownRight className="h-4 w-4 text-red-600" />
+              )}
+              <span className={cn(
+                "font-medium",
+                (dashboardData?.growth.ordersGrowth || 0) > 0 ? "text-green-600" : "text-red-600"
+              )}>
+                {Math.abs(dashboardData?.growth.ordersGrowth || 0)}%
+              </span>
+              <span>{isArabic ? 'من الفترة السابقة' : 'from last period'}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {isArabic ? 'إجمالي المشاهدات' : 'Total Views'}
+            </CardTitle>
+            <Eye className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(dashboardData?.overview.totalViews || 0)}
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              {(dashboardData?.growth.viewsGrowth || 0) > 0 ? (
+                <ArrowUpRight className="h-4 w-4 text-green-600" />
+              ) : (
+                <ArrowDownRight className="h-4 w-4 text-red-600" />
+              )}
+              <span className={cn(
+                "font-medium",
+                (dashboardData?.growth.viewsGrowth || 0) > 0 ? "text-green-600" : "text-red-600"
+              )}>
+                {Math.abs(dashboardData?.growth.viewsGrowth || 0)}%
+              </span>
+              <span>{isArabic ? 'من الفترة السابقة' : 'from last period'}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {isArabic ? 'المنتجات النشطة' : 'Active Products'}
+            </CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {dashboardData?.overview.activeListings || 0}
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span>{countsData?.inventory.draft || 0} {isArabic ? 'مسودة' : 'drafts'}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Top Performing Products */}
+      {dashboardData?.topListings && dashboardData.topListings.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                {isArabic ? 'أفضل المنتجات أداءً' : 'Top Performing Products'}
+              </div>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href={`/${locale}/seller/inventory`}>
+                  {isArabic ? 'عرض الكل' : 'View All'}
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Link>
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {dashboardData.topListings.map((product) => (
+                <div key={product.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm line-clamp-1">
+                      {isArabic ? product.title : product.titleEn || product.title}
+                    </h4>
+                    <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Eye className="h-3 w-3" />
+                        {product.views}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {formatCurrency(product.price)}
+                        <SARSymbol className="h-3 w-3" />
+                      </div>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/${locale}/shop/listing/${product.id}`}>
+                      {isArabic ? 'عرض' : 'View'}
+                    </Link>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quick Actions */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Button asChild className="h-auto p-4">
+          <Link href={`/${locale}/seller/inventory/new`} className="flex flex-col items-center gap-2">
+            <Plus className="h-6 w-6" />
+            <span>{isArabic ? 'إضافة منتج جديد' : 'Add New Product'}</span>
+          </Link>
+        </Button>
+        
+        <Button variant="outline" asChild className="h-auto p-4">
+          <Link href={`/${locale}/seller/orders`} className="flex flex-col items-center gap-2">
+            <ShoppingCart className="h-6 w-6" />
+            <span>{isArabic ? 'إدارة الطلبات' : 'Manage Orders'}</span>
+          </Link>
+        </Button>
+        
+        <Button variant="outline" asChild className="h-auto p-4">
+          <Link href={`/${locale}/seller/inventory`} className="flex flex-col items-center gap-2">
+            <Package className="h-6 w-6" />
+            <span>{isArabic ? 'إدارة المخزون' : 'Manage Inventory'}</span>
+          </Link>
+        </Button>
+        
+        <Button variant="outline" asChild className="h-auto p-4">
+          <Link href={`/${locale}/seller/messages`} className="flex flex-col items-center gap-2">
+            <Users className="h-6 w-6" />
+            <span>{isArabic ? 'الرسائل' : 'Messages'}</span>
+            {countsData?.messages.unread && countsData.messages.unread > 0 && (
+              <Badge className="text-xs">{countsData.messages.unread}</Badge>
+            )}
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 // Keep the old dashboard component for reference

@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SARSymbol } from '@/components/ui/currency-symbol';
 import { ImagePlaceholder } from '@/components/ui/image-placeholder';
+import { cn } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -107,31 +108,47 @@ interface InventoryItem {
   titleEn: string | null;
   sku: string;
   priceSar: number;
-  costSar: number;
-  stock: number;
-  lowStockThreshold: number;
+  quantity: number;
   make: string;
   model: string;
   fromYear: number;
   toYear: number;
   condition: string;
-  status: 'active' | 'inactive' | 'archived';
-  views: number;
-  orders: number;
-  revenue: number;
-  lastSold: string | null;
+  status: string;
+  viewCount: number;
+  publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  photos: { url: string }[];
+  photos: { url: string; alt?: string }[];
+  isLowStock: boolean;
+  daysSinceCreated: number;
+  reviewCount: number;
 }
 
 interface InventoryStats {
-  totalItems: number;
-  activeItems: number;
-  lowStockItems: number;
-  outOfStockItems: number;
-  totalValue: number;
-  potentialRevenue: number;
+  overview: {
+    totalListings: number;
+    published: number;
+    draft: number;
+    sold: number;
+    suspended: number;
+    totalQuantity: number;
+    totalViews: number;
+  };
+  stockAlerts: {
+    lowStock: number;
+    outOfStock: number;
+  };
+  activity: {
+    newListingsThisMonth: number;
+  };
+  topPerformers: Array<{
+    id: string;
+    title: string;
+    views: number;
+    price: number;
+    image: string | null;
+  }>;
 }
 
 const conditionLabels: Record<string, Record<string, string>> = {
@@ -152,7 +169,9 @@ export default function InventoryPage() {
   const isArabic = locale === 'ar';
   
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [stats, setStats] = useState<InventoryStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sellerId, setSellerId] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -166,171 +185,83 @@ export default function InventoryPage() {
   const [selectedAction, setSelectedAction] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   
-  const [stats] = useState<InventoryStats>({
-    totalItems: 156,
-    activeItems: 143,
-    lowStockItems: 8,
-    outOfStockItems: 3,
-    totalValue: 285000,
-    potentialRevenue: 342000,
-  });
-  
-  // Mock data
+  // Fetch seller information and inventory
   useEffect(() => {
-    const mockInventory: InventoryItem[] = [
-      {
-        id: '1',
-        titleAr: 'محرك تويوتا كامري 2015-2018',
-        titleEn: 'Toyota Camry Engine 2015-2018',
-        sku: 'TCE-2015-001',
-        priceSar: 8500,
-        costSar: 6000,
-        stock: 3,
-        lowStockThreshold: 2,
-        make: 'Toyota',
-        model: 'Camry',
-        fromYear: 2015,
-        toYear: 2018,
-        condition: 'REFURBISHED',
-        status: 'active',
-        views: 456,
-        orders: 12,
-        revenue: 102000,
-        lastSold: '2024-12-15T10:30:00Z',
-        createdAt: '2024-10-01T08:00:00Z',
-        updatedAt: '2024-12-15T10:30:00Z',
-        photos: [],
-      },
-      {
-        id: '2',
-        titleAr: 'فرامل هوندا أكورد أمامية',
-        titleEn: 'Honda Accord Front Brakes',
-        sku: 'HAB-2020-002',
-        priceSar: 1200,
-        costSar: 800,
-        stock: 15,
-        lowStockThreshold: 5,
-        make: 'Honda',
-        model: 'Accord',
-        fromYear: 2018,
-        toYear: 2022,
-        condition: 'NEW',
-        status: 'active',
-        views: 234,
-        orders: 8,
-        revenue: 9600,
-        lastSold: '2024-12-14T14:20:00Z',
-        createdAt: '2024-09-15T09:30:00Z',
-        updatedAt: '2024-12-14T14:20:00Z',
-        photos: [],
-      },
-      {
-        id: '3',
-        titleAr: 'ناقل حركة نيسان ألتيما',
-        titleEn: 'Nissan Altima Transmission',
-        sku: 'NAT-2019-003',
-        priceSar: 12000,
-        costSar: 9000,
-        stock: 1,
-        lowStockThreshold: 2,
-        make: 'Nissan',
-        model: 'Altima',
-        fromYear: 2016,
-        toYear: 2020,
-        condition: 'USED',
-        status: 'active',
-        views: 189,
-        orders: 4,
-        revenue: 48000,
-        lastSold: '2024-12-10T16:45:00Z',
-        createdAt: '2024-08-20T11:00:00Z',
-        updatedAt: '2024-12-10T16:45:00Z',
-        photos: [],
-      },
-      {
-        id: '4',
-        titleAr: 'مصابيح LED فورد F-150',
-        titleEn: 'Ford F-150 LED Headlights',
-        sku: 'FFH-2021-004',
-        priceSar: 3500,
-        costSar: 2500,
-        stock: 0,
-        lowStockThreshold: 3,
-        make: 'Ford',
-        model: 'F-150',
-        fromYear: 2018,
-        toYear: 2023,
-        condition: 'NEW',
-        status: 'active',
-        views: 567,
-        orders: 18,
-        revenue: 63000,
-        lastSold: '2024-12-16T09:15:00Z',
-        createdAt: '2024-07-10T13:20:00Z',
-        updatedAt: '2024-12-16T09:15:00Z',
-        photos: [],
-      },
-    ];
+    const fetchSellerInfo = async () => {
+      try {
+        // Get current user and seller info from the server
+        const userResponse = await fetch('/api/auth/me');
+        if (!userResponse.ok) {
+          router.push(`/${locale}/auth/login`);
+          return;
+        }
+        
+        const userData = await userResponse.json();
+        if (userData.user.role !== 'SELLER') {
+          router.push(`/${locale}`);
+          return;
+        }
+
+        // Get seller profile to get seller ID
+        const sellerResponse = await fetch('/api/sellers/me');
+        if (!sellerResponse.ok) {
+          console.error('Failed to fetch seller profile');
+          return;
+        }
+        
+        const sellerData = await sellerResponse.json();
+        setSellerId(sellerData.data.id);
+        
+      } catch (error) {
+        console.error('Error fetching seller info:', error);
+        router.push(`/${locale}/auth/login`);
+      }
+    };
+
+    fetchSellerInfo();
+  }, [locale, router]);
+
+  // Fetch inventory data when seller ID is available
+  useEffect(() => {
+    if (!sellerId) return;
     
-    setInventory(mockInventory);
-    setLoading(false);
-  }, []);
+    const fetchInventory = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: itemsPerPage.toString(),
+          ...(searchQuery && { search: searchQuery }),
+          ...(filterStatus !== 'all' && { status: filterStatus }),
+          ...(filterCondition !== 'all' && { condition: filterCondition }),
+          ...(activeTab === 'low-stock' && { lowStock: 'true' }),
+          sortBy,
+          sortOrder
+        });
+        
+        const response = await fetch(`/api/sellers/${sellerId}/inventory?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch inventory');
+        }
+        
+        const data = await response.json();
+        setInventory(data.data || []);
+        setStats(data.metadata?.metrics || null);
+        
+      } catch (error) {
+        console.error('Error fetching inventory:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInventory();
+  }, [sellerId, currentPage, itemsPerPage, searchQuery, filterStatus, filterCondition, activeTab, sortBy, sortOrder]);
   
-  const filteredInventory = inventory.filter(item => {
-    const matchesSearch = searchQuery === '' || 
-      item.titleAr.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.titleEn?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.model.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = filterStatus === 'all' || item.status === filterStatus;
-    const matchesCondition = filterCondition === 'all' || item.condition === filterCondition;
-    
-    const matchesTab = activeTab === 'all' ||
-      (activeTab === 'low-stock' && item.stock <= item.lowStockThreshold) ||
-      (activeTab === 'out-of-stock' && item.stock === 0) ||
-      (activeTab === 'archived' && item.status === 'archived');
-    
-    return matchesSearch && matchesStatus && matchesCondition && matchesTab;
-  });
-  
-  const sortedInventory = [...filteredInventory].sort((a, b) => {
-    let comparison = 0;
-    
-    switch (sortBy) {
-      case 'title':
-        comparison = (isArabic ? a.titleAr : a.titleEn || a.titleAr)
-          .localeCompare(isArabic ? b.titleAr : b.titleEn || b.titleAr);
-        break;
-      case 'price':
-        comparison = a.priceSar - b.priceSar;
-        break;
-      case 'stock':
-        comparison = a.stock - b.stock;
-        break;
-      case 'orders':
-        comparison = a.orders - b.orders;
-        break;
-      case 'revenue':
-        comparison = a.revenue - b.revenue;
-        break;
-      case 'createdAt':
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        break;
-      default:
-        comparison = 0;
-    }
-    
-    return sortOrder === 'asc' ? comparison : -comparison;
-  });
-  
-  const paginatedInventory = sortedInventory.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-  
-  const totalPages = Math.ceil(sortedInventory.length / itemsPerPage);
+  // Since filtering and sorting is handled server-side, we can use the inventory directly
+  // Client-side filtering is only needed for local search
+  const paginatedInventory = inventory;
+  const totalPages = 1; // Server handles pagination
   
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -372,9 +303,9 @@ export default function InventoryPage() {
   };
   
   const getStockStatus = (item: InventoryItem) => {
-    if (item.stock === 0) {
+    if (item.quantity === 0) {
       return { label: isArabic ? 'نفذ المخزون' : 'Out of Stock', color: 'destructive' };
-    } else if (item.stock <= item.lowStockThreshold) {
+    } else if (item.isLowStock) {
       return { label: isArabic ? 'مخزون منخفض' : 'Low Stock', color: 'warning' };
     }
     return { label: isArabic ? 'متوفر' : 'In Stock', color: 'success' };
@@ -403,9 +334,9 @@ export default function InventoryPage() {
               {isArabic ? 'إدارة المخزون' : 'Inventory Management'}
             </h1>
             <p className="text-muted-foreground text-label mt-1">
-              {isArabic 
-                ? `${stats.totalItems} قطعة في المخزون بقيمة ${formatCurrency(stats.totalValue)} ريال`
-                : `${stats.totalItems} items worth ${formatCurrency(stats.totalValue)} SAR`}
+              {stats && isArabic 
+                ? `${stats.overview.totalListings} قطعة في المخزون (${stats.overview.totalQuantity} كمية)`
+                : `${stats?.overview.totalListings || 0} items (${stats?.overview.totalQuantity || 0} quantity)`}
             </p>
           </div>
           <div className="flex gap-2">
@@ -458,9 +389,9 @@ export default function InventoryPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-price">{stats.totalItems}</div>
+            <div className="text-price">{stats?.overview.totalListings || 0}</div>
             <p className="text-detail text-muted-foreground mt-1">
-              {stats.activeItems} {isArabic ? 'نشط' : 'active'}
+              {stats?.overview.published || 0} {isArabic ? 'نشط' : 'active'}
             </p>
           </CardContent>
         </Card>
@@ -469,18 +400,17 @@ export default function InventoryPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-label font-semibold text-muted-foreground">
-                {isArabic ? 'قيمة المخزون' : 'Inventory Value'}
+                {isArabic ? 'إجمالي المشاهدات' : 'Total Views'}
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <Eye className="h-4 w-4 text-muted-foreground" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-price flex items-center gap-1">
-              {formatCurrency(stats.totalValue)}
-              <SARSymbol className="h-5 w-5" />
+            <div className="text-price">
+              {formatCurrency(stats?.overview.totalViews || 0)}
             </div>
             <p className="text-detail text-muted-foreground mt-1">
-              {isArabic ? 'القيمة الإجمالية' : 'Total value'}
+              {isArabic ? 'إجمالي المشاهدات' : 'Total views'}
             </p>
           </CardContent>
         </Card>
@@ -495,7 +425,7 @@ export default function InventoryPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-price text-amber-600">{stats.lowStockItems}</div>
+            <div className="text-price text-amber-600">{stats?.stockAlerts.lowStock || 0}</div>
             <p className="text-detail text-muted-foreground mt-1">
               {isArabic ? 'تحتاج إعادة تخزين' : 'Need restocking'}
             </p>
@@ -512,7 +442,7 @@ export default function InventoryPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-price text-red-600">{stats.outOfStockItems}</div>
+            <div className="text-price text-red-600">{stats?.stockAlerts.outOfStock || 0}</div>
             <p className="text-detail text-muted-foreground mt-1">
               {isArabic ? 'غير متوفر' : 'Unavailable'}
             </p>
@@ -524,16 +454,16 @@ export default function InventoryPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
         <TabsList>
           <TabsTrigger value="all">
-            {isArabic ? 'الكل' : 'All'} ({stats.totalItems})
+            {isArabic ? 'الكل' : 'All'} ({stats?.overview.totalListings || 0})
           </TabsTrigger>
           <TabsTrigger value="low-stock">
-            {isArabic ? 'مخزون منخفض' : 'Low Stock'} ({stats.lowStockItems})
+            {isArabic ? 'مخزون منخفض' : 'Low Stock'} ({stats?.stockAlerts.lowStock || 0})
           </TabsTrigger>
           <TabsTrigger value="out-of-stock">
-            {isArabic ? 'نفذ المخزون' : 'Out of Stock'} ({stats.outOfStockItems})
+            {isArabic ? 'نفذ المخزون' : 'Out of Stock'} ({stats?.stockAlerts.outOfStock || 0})
           </TabsTrigger>
           <TabsTrigger value="archived">
-            {isArabic ? 'مؤرشف' : 'Archived'} (5)
+            {isArabic ? 'مؤرشف' : 'Archived'} (0)
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -548,6 +478,11 @@ export default function InventoryPage() {
             className="ps-10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setCurrentPage(1); // Reset to first page when searching
+              }
+            }}
           />
         </div>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -676,10 +611,10 @@ export default function InventoryPage() {
                       variant="ghost"
                       size="sm"
                       className="-ml-3"
-                      onClick={() => handleSort('orders')}
+                      onClick={() => handleSort('viewCount')}
                     >
-                      {isArabic ? 'الطلبات' : 'Orders'}
-                      {sortBy === 'orders' ? (
+                      {isArabic ? 'المشاهدات' : 'Views'}
+                      {sortBy === 'viewCount' ? (
                         sortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
                       ) : (
                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -691,10 +626,10 @@ export default function InventoryPage() {
                       variant="ghost"
                       size="sm"
                       className="-ml-3"
-                      onClick={() => handleSort('revenue')}
+                      onClick={() => handleSort('createdAt')}
                     >
-                      {isArabic ? 'الإيرادات' : 'Revenue'}
-                      {sortBy === 'revenue' ? (
+                      {isArabic ? 'العمر' : 'Age'}
+                      {sortBy === 'createdAt' ? (
                         sortOrder === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
                       ) : (
                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -751,12 +686,11 @@ export default function InventoryPage() {
                       <TableCell>
                         <div>
                           <p className="text-label font-semibold flex items-center gap-1">
-                            {formatCurrency(item.priceSar)}
+                            {formatCurrency(item.priceSar / 100)}
                             <SARSymbol className="h-3 w-3" />
                           </p>
                           <p className="text-detail text-muted-foreground">
-                            {isArabic ? 'التكلفة: ' : 'Cost: '}
-                            {formatCurrency(item.costSar)}
+                            {isArabic ? 'SKU: ' : 'SKU: '}{item.sku}
                           </p>
                         </div>
                       </TableCell>
@@ -764,10 +698,10 @@ export default function InventoryPage() {
                         <div className="flex items-center gap-2">
                           <span className={cn(
                             "text-label font-semibold",
-                            item.stock === 0 && "text-red-600",
-                            item.stock <= item.lowStockThreshold && item.stock > 0 && "text-amber-600"
+                            item.quantity === 0 && "text-red-600",
+                            item.isLowStock && item.quantity > 0 && "text-amber-600"
                           )}>
-                            {item.stock}
+                            {item.quantity}
                           </span>
                           <Badge variant={stockStatus.color as any} className="badge-text">
                             {stockStatus.label}
@@ -775,30 +709,36 @@ export default function InventoryPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={cn(statusColors[item.status], "badge-text")}>
-                          {item.status === 'active' && (isArabic ? 'نشط' : 'Active')}
-                          {item.status === 'inactive' && (isArabic ? 'غير نشط' : 'Inactive')}
-                          {item.status === 'archived' && (isArabic ? 'مؤرشف' : 'Archived')}
+                        <Badge className={cn(
+                          item.status === 'PUBLISHED' ? 'bg-green-100 text-green-800' :
+                          item.status === 'DRAFT' ? 'bg-gray-100 text-gray-800' :
+                          item.status === 'SUSPENDED' ? 'bg-red-100 text-red-800' :
+                          'bg-amber-100 text-amber-800',
+                          "badge-text"
+                        )}>
+                          {item.status === 'PUBLISHED' && (isArabic ? 'منشور' : 'Published')}
+                          {item.status === 'DRAFT' && (isArabic ? 'مسودة' : 'Draft')}
+                          {item.status === 'SOLD' && (isArabic ? 'مباع' : 'Sold')}
+                          {item.status === 'SUSPENDED' && (isArabic ? 'معلق' : 'Suspended')}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <p className="text-label font-semibold">{item.orders}</p>
+                          <p className="text-label font-semibold">{item.reviewCount || 0}</p>
                           <p className="text-detail text-muted-foreground flex items-center gap-1">
                             <Eye className="h-3 w-3" />
-                            {item.views}
+                            {item.viewCount}
                           </p>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <p className="text-label font-semibold flex items-center gap-1">
-                            {formatCurrency(item.revenue)}
-                            <SARSymbol className="h-3 w-3" />
+                          <p className="text-label font-medium">
+                            {item.daysSinceCreated} {isArabic ? 'يوم' : 'days'}
                           </p>
-                          {item.lastSold && (
+                          {item.publishedAt && (
                             <p className="text-detail text-muted-foreground">
-                              {formatDate(item.lastSold)}
+                              {formatDate(item.publishedAt)}
                             </p>
                           )}
                         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -12,10 +12,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SARSymbol } from '@/components/ui/currency-symbol';
 import { QuickAddToCart } from '@/components/features/quick-add-to-cart';
+import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { Search, SlidersHorizontal, Sparkles, Filter, X, ChevronDown, Grid3X3, List } from 'lucide-react';
 import { ImagePlaceholder } from '@/components/ui/image-placeholder';
+import { MobileSearch } from '@/components/features/mobile-search';
+import { CategoryGrid } from '@/components/features/category-grid';
+import { EnhancedProductCard } from '@/components/features/enhanced-product-card';
+import { FiltersDrawer } from '@/components/features/filters-drawer';
+import { ProductCardSkeleton } from '@/components/features/product-card-skeleton';
+import { SearchSuggestions } from '@/components/features/search-suggestions';
+import { QuickPreviewModal } from '@/components/features/quick-preview-modal';
 
 const conditionLabels: Record<string, Record<string, string>> = {
   NEW: { ar: 'جديد', en: 'New' },
@@ -61,11 +69,17 @@ interface Listing {
   toYear: number;
   condition: string;
   city: string;
+  viewCount: number;
+  isFeatured: boolean;
   seller: {
     id: string;
-    yardName: string;
+    businessName: string;
+    verified: boolean;
+    rating: number;
+    city: string;
   };
-  photos: { url: string }[];
+  photos: { url: string; alt?: string }[];
+  reviewCount?: number;
 }
 
 interface ShopClientProps {
@@ -76,6 +90,7 @@ export default function ShopClient({ initialListings }: ShopClientProps) {
   const locale = useLocale();
   const router = useRouter();
   const isArabic = locale === 'ar';
+  const filterRef = useRef<HTMLDivElement>(null);
   
   const [listings, setListings] = useState<Listing[]>(initialListings);
   const [loading, setLoading] = useState(false);
@@ -83,6 +98,12 @@ export default function ShopClient({ initialListings }: ShopClientProps) {
   const [selectedMake, setSelectedMake] = useState('');
   const [selectedCondition, setSelectedCondition] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
+  const [isSticky, setIsSticky] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [quickPreviewListing, setQuickPreviewListing] = useState<Listing | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
   const fetchListings = async () => {
     setLoading(true);
@@ -107,7 +128,7 @@ export default function ShopClient({ initialListings }: ShopClientProps) {
       const data = await response.json();
       
       // If category is selected, filter results client-side for better accuracy
-      let filteredListings = data.listings || [];
+      let filteredListings = data.data || [];
       if (selectedCategory && categoryKeywords[selectedCategory]) {
         const keywords = categoryKeywords[selectedCategory];
         if (keywords.length > 0) {
@@ -126,6 +147,36 @@ export default function ShopClient({ initialListings }: ShopClientProps) {
     }
   };
   
+  // Sticky scroll effect - track filter position
+  useEffect(() => {
+    let stickyOffset = 0;
+    
+    const updateStickyOffset = () => {
+      if (filterRef.current) {
+        // Get the filter's position relative to the document
+        const rect = filterRef.current.getBoundingClientRect();
+        stickyOffset = rect.top + window.scrollY - 50; // 50px buffer
+      }
+    };
+
+    const handleScroll = () => {
+      const scrolled = window.scrollY;
+      setIsSticky(scrolled > stickyOffset);
+    };
+
+    // Calculate initial position
+    const timer = setTimeout(updateStickyOffset, 100);
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', updateStickyOffset, { passive: true });
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', updateStickyOffset);
+    };
+  }, []);
+
   useEffect(() => {
     if (selectedMake || selectedCondition || searchQuery || selectedCategory) {
       fetchListings();
@@ -144,231 +195,358 @@ export default function ShopClient({ initialListings }: ShopClientProps) {
   const handleAdvancedSearch = () => {
     router.push(`/${locale}/shop/search`);
   };
+
+  const handleToggleFavorite = (listingId: string) => {
+    setFavorites(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(listingId)) {
+        newFavorites.delete(listingId);
+      } else {
+        newFavorites.add(listingId);
+      }
+      return newFavorites;
+    });
+  };
   
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Search and Filters Bar */}
-      <div className="mb-8 space-y-4">
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder={isArabic ? 'ابحث عن قطع غيار...' : 'Search for parts...'}
-              className="ps-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            />
-          </div>
-          <Button onClick={handleSearch}>
-            {isArabic ? 'بحث' : 'Search'}
-          </Button>
-          <Button variant="outline" onClick={handleAdvancedSearch}>
-            <SlidersHorizontal className="me-2 h-4 w-4" />
-            {isArabic ? 'بحث متقدم' : 'Advanced Search'}
-          </Button>
+    <div className="bg-background">
+      {/* Enhanced Header with Mobile-First Search */}
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Mobile Search */}
+        <div className="block md:hidden">
+          <MobileSearch 
+            onSearch={handleSearch}
+            placeholder={isArabic ? 'ابحث عن قطع غيار...' : 'Search for parts...'}
+          />
         </div>
-        
-        <div className="flex gap-4 flex-wrap items-end">
-          <div className="flex-1 min-w-[200px]">
-            <Label>{isArabic ? 'الشركة المصنعة' : 'Make'}</Label>
-            <Select 
-              value={selectedMake || 'all'} 
-              onValueChange={(value) => setSelectedMake(value === 'all' ? '' : value)}
-            >
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder={isArabic ? 'اختر الشركة' : 'Select make'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  {isArabic ? 'جميع الشركات' : 'All Makes'}
-                </SelectItem>
-                {carMakes.map(make => (
-                  <SelectItem key={make} value={make}>
-                    {make}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="flex-1 min-w-[200px]">
-            <Label>{isArabic ? 'الحالة' : 'Condition'}</Label>
-            <Select 
-              value={selectedCondition || 'all'} 
-              onValueChange={(value) => setSelectedCondition(value === 'all' ? '' : value)}
-            >
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder={isArabic ? 'اختر الحالة' : 'Select condition'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  {isArabic ? 'جميع الحالات' : 'All Conditions'}
-                </SelectItem>
-                <SelectItem value="NEW">{conditionLabels.NEW[locale as 'ar' | 'en']}</SelectItem>
-                <SelectItem value="REFURBISHED">{conditionLabels.REFURBISHED[locale as 'ar' | 'en']}</SelectItem>
-                <SelectItem value="USED">{conditionLabels.USED[locale as 'ar' | 'en']}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {(selectedMake || selectedCondition || searchQuery || selectedCategory) && (
-            <Button 
-              variant="ghost" 
-              onClick={() => {
-                setSelectedMake('');
-                setSelectedCondition('');
-                setSearchQuery('');
-                setSelectedCategory('');
-                setListings(initialListings);
-              }}
-            >
-              {isArabic ? 'مسح الفلاتر' : 'Clear Filters'}
+
+        {/* Desktop Search & Filters */}
+        <div className="hidden md:block space-y-4">
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-saudi-green" />
+              <Input
+                type="search"
+                placeholder={isArabic ? 'ابحث عن قطع غيار...' : 'Search for parts...'}
+                className={`ps-10 input-modern h-12 ${isArabic ? 'text-base font-medium' : ''}`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              />
+              {showSuggestions && searchQuery && (
+                <SearchSuggestions
+                  query={searchQuery}
+                  onSuggestionClick={(suggestion) => {
+                    setSearchQuery(suggestion);
+                    setShowSuggestions(false);
+                    handleSearch();
+                  }}
+                />
+              )}
+            </div>
+            <Button onClick={handleSearch} className="btn-saudi h-12 px-6">
+              {isArabic ? 'بحث' : 'Search'}
             </Button>
-          )}
+            <Button variant="outline" onClick={handleAdvancedSearch} className="h-12 px-4">
+              <SlidersHorizontal className="me-2 h-4 w-4" />
+              {isArabic ? 'متقدم' : 'Advanced'}
+            </Button>
+          </div>
+          
+          {/* Sticky Filter Section */}
+          <div>
+            {/* Placeholder to prevent layout shift */}
+            {isSticky && <div className="h-[60px]" />}
+            
+            <div 
+              ref={filterRef}
+              className={cn(
+                "transition-all duration-200 ease-in-out bg-background border-b border-transparent",
+                isSticky && "fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-border shadow-lg"
+              )}
+            >
+              <div className={cn(
+                "flex gap-3 flex-wrap items-end",
+                isSticky ? "container mx-auto px-4 py-3" : "py-3"
+              )}>
+                <div className="flex-1 min-w-[180px] space-y-1">
+                  {!isSticky && <Label className={`hierarchy-caption text-xs ${isArabic ? 'font-semibold' : ''}`}>{isArabic ? 'الشركة المصنعة' : 'Make'}</Label>}
+                  <Select 
+                    value={selectedMake || 'all'} 
+                    onValueChange={(value) => setSelectedMake(value === 'all' ? '' : value)}
+                  >
+                    <SelectTrigger className={cn(
+                      "h-9 transition-all",
+                      isSticky ? "text-xs" : "text-sm",
+                      isArabic && "font-medium"
+                    )}>
+                      <SelectValue placeholder={isArabic ? 'اختر الشركة' : 'Select make'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        {isArabic ? 'جميع الشركات' : 'All Makes'}
+                      </SelectItem>
+                      {carMakes.map(make => (
+                        <SelectItem key={make} value={make}>
+                          {make}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex-1 min-w-[180px] space-y-1">
+                  {!isSticky && <Label className={`hierarchy-caption text-xs ${isArabic ? 'font-semibold' : ''}`}>{isArabic ? 'الحالة' : 'Condition'}</Label>}
+                  <Select 
+                    value={selectedCondition || 'all'} 
+                    onValueChange={(value) => setSelectedCondition(value === 'all' ? '' : value)}
+                  >
+                    <SelectTrigger className={cn(
+                      "h-9 transition-all",
+                      isSticky ? "text-xs" : "text-sm",
+                      isArabic && "font-medium"
+                    )}>
+                      <SelectValue placeholder={isArabic ? 'اختر الحالة' : 'Select condition'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        {isArabic ? 'جميع الحالات' : 'All Conditions'}
+                      </SelectItem>
+                      <SelectItem value="NEW">{conditionLabels.NEW[locale as 'ar' | 'en']}</SelectItem>
+                      <SelectItem value="REFURBISHED">{conditionLabels.REFURBISHED[locale as 'ar' | 'en']}</SelectItem>
+                      <SelectItem value="USED">{conditionLabels.USED[locale as 'ar' | 'en']}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* View Toggle */}
+                <div className="flex items-center border rounded-md p-0.5 bg-muted/20">
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    className={cn(
+                      "p-0 transition-all",
+                      isSticky ? "h-7 w-7" : "h-8 w-8"
+                    )}
+                    title={isArabic ? 'عرض الشبكة' : 'Grid view'}
+                  >
+                    <Grid3X3 className={cn(isSticky ? "h-3 w-3" : "h-4 w-4")} />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    className={cn(
+                      "p-0 transition-all",
+                      isSticky ? "h-7 w-7" : "h-8 w-8"
+                    )}
+                    title={isArabic ? 'عرض القائمة' : 'List view'}
+                  >
+                    <List className={cn(isSticky ? "h-3 w-3" : "h-4 w-4")} />
+                  </Button>
+                </div>
+
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setShowFilters(!showFilters)} 
+                  className={cn(
+                    "md:hidden transition-all",
+                    isSticky ? "h-8 text-xs px-2" : "h-9 px-3",
+                    isArabic && "font-semibold"
+                  )}
+                >
+                  <Filter className={cn("me-2", isSticky ? "h-3 w-3" : "h-4 w-4")} />
+                  {isArabic ? 'فلاتر' : 'Filters'}
+                </Button>
+                
+                {(selectedMake || selectedCondition || searchQuery || selectedCategory) && (
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => {
+                      setSelectedMake('');
+                      setSelectedCondition('');
+                      setSearchQuery('');
+                      setSelectedCategory('');
+                      setListings(initialListings);
+                    }}
+                    className={cn(
+                      "transition-all text-destructive hover:text-destructive",
+                      isSticky ? "h-8 text-xs px-2" : "h-9 px-3"
+                    )}
+                  >
+                    <X className={cn("me-1", isSticky ? "h-3 w-3" : "h-4 w-4")} />
+                    {isArabic ? 'مسح' : 'Clear'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Filters */}
+        <div className={cn("md:hidden space-y-4", !showFilters && "hidden")}>
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label className="hierarchy-caption">{isArabic ? 'الشركة المصنعة' : 'Make'}</Label>
+              <Select 
+                value={selectedMake || 'all'} 
+                onValueChange={(value) => setSelectedMake(value === 'all' ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={isArabic ? 'اختر الشركة' : 'Select make'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {isArabic ? 'جميع الشركات' : 'All Makes'}
+                  </SelectItem>
+                  {carMakes.map(make => (
+                    <SelectItem key={make} value={make}>
+                      {make}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="hierarchy-caption">{isArabic ? 'الحالة' : 'Condition'}</Label>
+              <Select 
+                value={selectedCondition || 'all'} 
+                onValueChange={(value) => setSelectedCondition(value === 'all' ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={isArabic ? 'اختر الحالة' : 'Select condition'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {isArabic ? 'جميع الحالات' : 'All Conditions'}
+                  </SelectItem>
+                  <SelectItem value="NEW">{conditionLabels.NEW[locale as 'ar' | 'en']}</SelectItem>
+                  <SelectItem value="REFURBISHED">{conditionLabels.REFURBISHED[locale as 'ar' | 'en']}</SelectItem>
+                  <SelectItem value="USED">{conditionLabels.USED[locale as 'ar' | 'en']}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
       </div>
-      
-      {/* Categories */}
-      <section className="mb-8">
-        <h2 className="mb-4 text-2xl font-bold">
-          {isArabic ? 'الفئات' : 'Categories'}
-        </h2>
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {categories[locale as 'ar' | 'en'].map((category, index) => (
-            <Button 
-              key={index}
-              variant={selectedCategory === category ? 'default' : 'outline'}
-              onClick={() => setSelectedCategory(selectedCategory === category ? '' : category)}
-              className={cn(
-                "whitespace-nowrap transition-all",
-                selectedCategory === category && "ring-2 ring-primary ring-offset-2"
-              )}
-            >
-              {category}
-              {selectedCategory === category && (
-                <span className="ms-2 inline-flex h-2 w-2 rounded-full bg-white animate-pulse" />
-              )}
-            </Button>
-          ))}
-        </div>
+
+      {/* Enhanced Categories Grid */}
+      <section className="container mx-auto px-4 mb-8">
+        <CategoryGrid 
+          selectedCategory={selectedCategory}
+          onCategorySelect={setSelectedCategory}
+        />
       </section>
       
-      {/* Listings */}
-      <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold">
+      {/* Enhanced Listings */}
+      <section className="container mx-auto px-4 pb-8">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className={`hierarchy-heading ${isArabic ? 'font-extrabold' : ''}`}>
             {isArabic ? 'القطع المتاحة' : 'Available Parts'}
           </h2>
-          <p className="text-muted-foreground">
-            {listings.length} {isArabic ? 'قطعة' : 'items'}
-          </p>
+          <div className="flex items-center gap-4">
+            <p className={`hierarchy-caption ${isArabic ? 'font-semibold' : ''}`}>
+              {listings.length} {isArabic ? 'قطعة متاحة' : 'parts available'}
+            </p>
+            {favorites.size > 0 && (
+              <Badge className="badge-gold">
+                {favorites.size} {isArabic ? 'مفضل' : 'favorites'}
+              </Badge>
+            )}
+          </div>
         </div>
         
         {loading ? (
-          <div className="text-center py-16">
-            {isArabic ? 'جاري التحميل...' : 'Loading...'}
+          <div className={cn(
+            "grid gap-6",
+            viewMode === 'grid' ? "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1"
+          )}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ProductCardSkeleton key={i} viewMode={viewMode} />
+            ))}
           </div>
         ) : listings.length === 0 ? (
-          <Card>
-            <CardContent className="py-16 text-center">
-              <p className="text-muted-foreground">
-                {isArabic ? 'لا توجد قطع متاحة' : 'No parts available'}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="text-center py-20">
+            <div className="card-saudi max-w-md mx-auto">
+              <div className="text-center p-8">
+                <div className="w-16 h-16 bg-saudi-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-8 h-8 text-saudi-green" />
+                </div>
+                <h3 className="hierarchy-subheading mb-2">
+                  {isArabic ? 'لم نجد قطع متطابقة' : 'No matching parts found'}
+                </h3>
+                <p className="hierarchy-body text-muted-foreground mb-4">
+                  {isArabic 
+                    ? 'جرب تعديل معايير البحث أو تصفح الفئات المختلفة'
+                    : 'Try adjusting your search criteria or browse different categories'
+                  }
+                </p>
+                <Button
+                  onClick={() => {
+                    setSelectedMake('');
+                    setSelectedCondition('');
+                    setSearchQuery('');
+                    setSelectedCategory('');
+                    setListings(initialListings);
+                  }}
+                  className="btn-saudi"
+                >
+                  {isArabic ? 'مسح جميع الفلاتر' : 'Clear All Filters'}
+                </Button>
+              </div>
+            </div>
+          </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className={cn(
+            "grid gap-6",
+            viewMode === 'grid' ? "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1"
+          )}>
             {listings.map((listing) => (
-              <Card key={listing.id} className="overflow-hidden card-hover group">
-                <CardHeader className="p-0">
-                  <div className="aspect-square bg-muted flex items-center justify-center relative overflow-hidden">
-                    {listing.photos && listing.photos.length > 0 ? (
-                      <Image 
-                        src={listing.photos[0].url} 
-                        alt={isArabic ? listing.titleAr : listing.titleEn || listing.titleAr}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-110"
-                      />
-                    ) : (
-                      <ImagePlaceholder 
-                        className="w-full h-full"
-                        type={
-                          listing.titleAr.includes('محرك') || listing.titleEn?.includes('Engine') ? 'engine' :
-                          listing.titleAr.includes('فرامل') || listing.titleEn?.includes('Brake') ? 'brake' :
-                          listing.titleAr.includes('ناقل') || listing.titleEn?.includes('Transmission') ? 'transmission' :
-                          listing.titleAr.includes('كهرب') || listing.titleEn?.includes('Electric') ? 'electrical' :
-                          'part'
-                        }
-                        size="lg"
-                      />
-                    )}
-                    {listing.condition === 'NEW' && (
-                      <div className="absolute top-2 start-2 px-2 py-1 bg-green-500/90 text-white text-xs font-semibold rounded-full flex items-center gap-1 backdrop-blur-sm">
-                        <Sparkles className="h-3 w-3" />
-                        {isArabic ? 'جديد' : 'New'}
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 space-y-3">
-                  <h3 className="card-title-enhanced line-clamp-2 group-hover:text-primary transition-colors">
-                    {isArabic ? listing.titleAr : listing.titleEn || listing.titleAr}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      variant={listing.condition === 'NEW' ? 'default' : 'secondary'}
-                      className={cn(
-                        "badge-modern badge-text",
-                        listing.condition === 'NEW' && "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-                        listing.condition === 'USED' && "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-                        listing.condition === 'REFURBISHED' && "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                      )}
-                    >
-                      {conditionLabels[listing.condition]?.[locale as 'ar' | 'en'] || listing.condition}
-                    </Badge>
-                    <span className="text-label text-muted-foreground font-medium">
-                      {listing.make} {listing.model}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-detail inline-block px-2.5 py-1 bg-muted/50 rounded-full font-medium">
-                      {listing.fromYear} - {listing.toYear}
-                    </span>
-                  </div>
-                  <div className="flex items-baseline justify-between pt-2 border-t border-border/50">
-                    <div className="flex items-center gap-1">
-                      <span className="text-price text-primary">
-                        {listing.priceSar.toLocaleString(isArabic ? 'ar-SA' : 'en-US')}
-                      </span>
-                      <SARSymbol className="h-5 w-5 text-primary/80" />
-                    </div>
-                    <div className="text-detail text-muted-foreground flex items-center gap-1.5 font-medium">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-                      {listing.city}
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="p-4 pt-0 flex gap-2">
-                  <Button 
-                    className="flex-1 btn-hover" 
-                    variant="outline" 
-                    asChild
-                  >
-                    <Link href={`/${locale}/shop/listing/${listing.id}`}>
-                      {isArabic ? 'عرض التفاصيل' : 'View Details'}
-                    </Link>
-                  </Button>
-                  <div className="btn-hover">
-                    <QuickAddToCart listing={listing} size="default" />
-                  </div>
-                </CardFooter>
-              </Card>
+              <EnhancedProductCard
+                key={listing.id}
+                listing={listing}
+                onToggleFavorite={handleToggleFavorite}
+                isFavorited={favorites.has(listing.id)}
+                onQuickView={() => setQuickPreviewListing(listing)}
+                viewMode={viewMode}
+              />
             ))}
           </div>
         )}
       </section>
+
+      {/* Mobile Filters Drawer */}
+      <FiltersDrawer
+        open={showFilters}
+        onOpenChange={setShowFilters}
+        selectedMake={selectedMake}
+        selectedCondition={selectedCondition}
+        onMakeChange={setSelectedMake}
+        onConditionChange={setSelectedCondition}
+        onClearFilters={() => {
+          setSelectedMake('');
+          setSelectedCondition('');
+          setSearchQuery('');
+          setSelectedCategory('');
+          setListings(initialListings);
+        }}
+      />
+
+      {/* Quick Preview Modal */}
+      <QuickPreviewModal
+        listing={quickPreviewListing}
+        open={!!quickPreviewListing}
+        onOpenChange={(open) => !open && setQuickPreviewListing(null)}
+        onToggleFavorite={handleToggleFavorite}
+        isFavorited={quickPreviewListing ? favorites.has(quickPreviewListing.id) : false}
+      />
+
+      {/* Sticky Top Padding when filter is sticky */}
+      {isSticky && <div className="h-20" />}
     </div>
   );
 }

@@ -45,7 +45,7 @@
 }
 
 /* =================================================================
-   SAUDI ARABIA & RIYADH INSPIRED COLOR PALETTE
+   SAUDI ARABIA & RIYADH INSPIRED COLOR PALETTE & ENHANCED STYLES
    =================================================================
    Primary Colors:
    - Saudi Green (#165d31) - National flag color, prosperity
@@ -505,6 +505,34 @@
   [lang="ar"] .leading-loose { line-height: var(--leading-ar-loose); }
   
   /* Visual Hierarchy Classes */
+  .hierarchy-display {
+    font-size: var(--text-5xl);
+    font-weight: 900;
+    line-height: var(--leading-tight);
+    margin-bottom: var(--space-4);
+    letter-spacing: -0.02em;
+  }
+
+  [lang="ar"] .hierarchy-display {
+    font-size: var(--text-5xl-ar);
+    line-height: var(--leading-ar-tight);
+    font-weight: 900;
+    letter-spacing: 0.01em;
+  }
+
+  .hierarchy-large {
+    font-size: var(--text-xl);
+    font-weight: 500;
+    line-height: var(--leading-relaxed);
+    margin-bottom: var(--space-6);
+  }
+
+  [lang="ar"] .hierarchy-large {
+    font-size: var(--text-xl-ar);
+    line-height: var(--leading-ar-relaxed);
+    font-weight: 600;
+  }
+
   .hierarchy-title {
     font-size: var(--text-4xl);
     font-weight: 900;
@@ -823,6 +851,234 @@
     text-transform: none;
     font-size: 0.75rem;
   }
+  
+  /* Enhanced Arabic component spacing and layouts */
+  [lang="ar"] .hero-title {
+    margin-bottom: 2rem;
+    line-height: 1.7;
+  }
+  
+  [lang="ar"] .hero-subtitle {
+    margin-bottom: 2.5rem;
+    line-height: 1.9;
+  }
+  
+  /* Arabic button enhancements */
+  [lang="ar"] .btn-saudi,
+  [lang="ar"] .btn-gold {
+    padding: 0.875rem 2rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  
+  /* Enhanced card titles for Arabic */
+  [lang="ar"] .card-title {
+    line-height: 1.8;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Better input and select styling for Arabic */
+  [lang="ar"] input,
+  [lang="ar"] select,
+  [lang="ar"] textarea {
+    font-weight: 500;
+    line-height: 1.6;
+  }
+  
+  /* Navigation enhancements */
+  [lang="ar"] .nav-link {
+    line-height: 1.6;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Enhanced badge spacing for Arabic */
+  [lang="ar"] .badge {
+    padding: 0.375rem 1rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+  
+  /* Better search and filter section spacing */
+  [lang="ar"] .search-section {
+    gap: 1rem;
+  }
+  
+  /* Better Arabic text in value propositions */
+  [lang="ar"] .value-prop {
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  
+  /* Enhanced mobile navigation spacing */
+  [lang="ar"] .mobile-nav {
+    gap: 1.25rem;
+  }
+  
+  [lang="ar"] .mobile-nav-item {
+    padding: 0.75rem 1rem;
+    line-height: 1.6;
+  }
+
+  /* =================================================================
+     ENHANCED CARD STYLING UTILITIES
+     ================================================================= */
+
+  /* Premium card styling for high-priority content */
+  .card-premium {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.98) 0%, 
+      oklch(from var(--desert-gold) l c h / 0.05) 50%,
+      oklch(from var(--saudi-green) l c h / 0.03) 100%);
+    border: 2px solid oklch(from var(--desert-gold) l c h / 0.25);
+    box-shadow: 0 10px 40px -10px oklch(from var(--desert-gold) l c h / 0.2);
+    backdrop-filter: blur(8px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-premium::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, 
+      var(--saudi-green) 0%, 
+      var(--desert-gold) 50%,
+      var(--saudi-green) 100%);
+  }
+
+  /* Enhanced hover effects for all cards */
+  .card-enhanced-hover {
+    transition: all 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-enhanced-hover:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 60px -15px oklch(from var(--saudi-green) l c h / 0.25);
+    border-color: oklch(from var(--saudi-green) l c h / 0.4);
+  }
+
+  /* Card glow effects */
+  .card-glow-saudi {
+    box-shadow: 0 0 0 1px oklch(from var(--saudi-green) l c h / 0.1),
+                0 4px 16px oklch(from var(--saudi-green) l c h / 0.1);
+  }
+
+  .card-glow-saudi:hover {
+    box-shadow: 0 0 0 1px oklch(from var(--saudi-green) l c h / 0.2),
+                0 8px 32px oklch(from var(--saudi-green) l c h / 0.2),
+                0 0 40px oklch(from var(--saudi-green) l c h / 0.1);
+  }
+
+  .card-glow-gold {
+    box-shadow: 0 0 0 1px oklch(from var(--desert-gold) l c h / 0.1),
+                0 4px 16px oklch(from var(--desert-gold) l c h / 0.1);
+  }
+
+  .card-glow-gold:hover {
+    box-shadow: 0 0 0 1px oklch(from var(--desert-gold) l c h / 0.2),
+                0 8px 32px oklch(from var(--desert-gold) l c h / 0.2),
+                0 0 40px oklch(from var(--desert-gold) l c h / 0.1);
+  }
+
+  /* Card gradient overlays */
+  .card-gradient-overlay {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-gradient-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, 
+      transparent 0%, 
+      oklch(from var(--saudi-green) l c h / 0.02) 50%,
+      transparent 100%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms ease;
+  }
+
+  .card-gradient-overlay:hover::after {
+    opacity: 1;
+  }
+
+  /* Card interactive states */
+  .card-interactive {
+    cursor: pointer;
+    user-select: none;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px oklch(from var(--foreground) l c h / 0.1);
+  }
+
+  .card-interactive:active {
+    transform: translateY(0px) scale(0.98);
+    transition-duration: 100ms;
+  }
+
+  /* Card border animations */
+  @keyframes card-border-glow {
+    0%, 100% {
+      border-color: oklch(from var(--saudi-green) l c h / 0.2);
+      box-shadow: 0 0 20px oklch(from var(--saudi-green) l c h / 0.1);
+    }
+    50% {
+      border-color: oklch(from var(--saudi-green) l c h / 0.4);
+      box-shadow: 0 0 30px oklch(from var(--saudi-green) l c h / 0.2);
+    }
+  }
+
+  .card-border-animate {
+    animation: card-border-glow 2s ease-in-out infinite;
+  }
+
+  /* Card content spacing improvements */
+  .card-content-enhanced {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .card-content-enhanced > * + * {
+    margin-top: 0;
+  }
+
+  /* Card title enhancements */
+  .card-title-primary {
+    color: var(--saudi-green);
+    font-weight: 700;
+    font-size: 1.125rem;
+    line-height: 1.4;
+    letter-spacing: -0.02em;
+  }
+
+  [lang="ar"] .card-title-primary {
+    font-size: 1.25rem;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    font-weight: 800;
+  }
+
+  /* Card description improvements */
+  .card-description-enhanced {
+    color: oklch(from var(--muted-foreground) l c h / 0.8);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  [lang="ar"] .card-description-enhanced {
+    font-size: 0.9375rem;
+    line-height: 1.8;
+    font-weight: 500;
+  }
 }
 
 /* =================================================================
@@ -1096,5 +1352,384 @@
     100% {
       box-shadow: 0 0 0 0 oklch(from var(--saudi-green) l c h / 0);
     }
+  }
+}
+
+/* =================================================================
+   ENHANCED SELLER DASHBOARD COMPONENTS
+   ================================================================= */
+
+@layer components {
+  /* Customer Management Card Gradients */
+  .customer-card-gradient {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.95) 0%, 
+      oklch(from var(--saudi-green) l c h / 0.05) 100%);
+    border: 1px solid oklch(from var(--saudi-green) l c h / 0.1);
+    transition: all 300ms ease;
+  }
+  
+  .customer-card-gradient:hover {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.98) 0%, 
+      oklch(from var(--saudi-green) l c h / 0.08) 100%);
+    border-color: oklch(from var(--saudi-green) l c h / 0.2);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .customer-vip-gradient {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.95) 0%, 
+      oklch(from var(--desert-gold) l c h / 0.1) 100%);
+    border: 1px solid oklch(from var(--desert-gold) l c h / 0.3);
+  }
+  
+  /* Messages & Communications Card Gradients */
+  .messages-card-gradient {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.95) 0%, 
+      oklch(from var(--riyadh-sky) l c h / 0.05) 100%);
+    border: 1px solid oklch(from var(--riyadh-sky) l c h / 0.15);
+  }
+  
+  .messages-urgent-gradient {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.95) 0%, 
+      oklch(from var(--destructive) l c h / 0.05) 100%);
+    border: 1px solid oklch(from var(--destructive) l c h / 0.2);
+  }
+  
+  /* Profile & Business Card Gradients */
+  .profile-header-gradient {
+    background: linear-gradient(135deg, 
+      var(--saudi-green) 0%, 
+      var(--saudi-green-dark) 50%, 
+      var(--desert-gold-dark) 100%);
+    color: var(--pearl-white);
+  }
+  
+  .profile-section-gradient {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.98) 0%, 
+      oklch(from var(--sand-beige) l c h / 0.3) 100%);
+    border: 1px solid oklch(from var(--sand-beige) l c h / 0.4);
+  }
+  
+  /* Shipping & Logistics Card Gradients */
+  .shipping-card-gradient {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.95) 0%, 
+      oklch(from var(--oasis-teal) l c h / 0.08) 100%);
+    border: 1px solid oklch(from var(--oasis-teal) l c h / 0.2);
+  }
+  
+  .shipping-priority-gradient {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.95) 0%, 
+      oklch(from var(--desert-gold) l c h / 0.1) 100%);
+    border: 1px solid oklch(from var(--desert-gold) l c h / 0.25);
+  }
+  
+  /* Performance & Analytics Card Gradients */
+  .performance-card-gradient {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.95) 0%, 
+      oklch(from var(--palm-green) l c h / 0.05) 100%);
+    border: 1px solid oklch(from var(--palm-green) l c h / 0.15);
+  }
+  
+  .performance-metric-positive {
+    background: linear-gradient(135deg, 
+      oklch(from var(--success) l c h / 0.1) 0%, 
+      oklch(from var(--success) l c h / 0.05) 100%);
+    border: 1px solid oklch(from var(--success) l c h / 0.2);
+  }
+  
+  .performance-metric-negative {
+    background: linear-gradient(135deg, 
+      oklch(from var(--destructive) l c h / 0.08) 0%, 
+      oklch(from var(--destructive) l c h / 0.03) 100%);
+    border: 1px solid oklch(from var(--destructive) l c h / 0.15);
+  }
+  
+  /* Enhanced Button Styles */
+  .btn-saudi-enhanced {
+    background: linear-gradient(135deg, 
+      var(--saudi-green) 0%, 
+      var(--saudi-green-dark) 100%);
+    color: var(--pearl-white);
+    padding: 0.875rem 1.75rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    transition: all 300ms ease;
+    box-shadow: 0 4px 12px oklch(from var(--saudi-green) l c h / 0.3);
+    border: none;
+  }
+  
+  .btn-saudi-enhanced:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px oklch(from var(--saudi-green) l c h / 0.4);
+    background: linear-gradient(135deg, 
+      var(--saudi-green-light) 0%, 
+      var(--saudi-green) 100%);
+  }
+  
+  .btn-gold-enhanced {
+    background: linear-gradient(135deg, 
+      var(--desert-gold) 0%, 
+      var(--desert-gold-dark) 100%);
+    color: var(--saudi-green-dark);
+    padding: 0.875rem 1.75rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    transition: all 300ms ease;
+    box-shadow: 0 4px 12px oklch(from var(--desert-gold) l c h / 0.3);
+    border: none;
+  }
+  
+  .btn-gold-enhanced:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px oklch(from var(--desert-gold) l c h / 0.4);
+    background: linear-gradient(135deg, 
+      var(--desert-gold-light) 0%, 
+      var(--desert-gold) 100%);
+  }
+  
+  /* Status Indicators */
+  .status-indicator-active {
+    background: var(--saudi-green);
+    color: var(--pearl-white);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .status-indicator-pending {
+    background: var(--desert-gold);
+    color: var(--saudi-green-dark);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .status-indicator-inactive {
+    background: oklch(from var(--muted) l c h / 0.5);
+    color: var(--muted-foreground);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .status-indicator-urgent {
+    background: var(--destructive);
+    color: var(--pearl-white);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    animation: pulse-urgent 2s infinite;
+  }
+  
+  @keyframes pulse-urgent {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+  
+  /* Progress Bars */
+  .progress-saudi {
+    width: 100%;
+    height: 8px;
+    background: oklch(from var(--saudi-green) l c h / 0.1);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+  
+  .progress-saudi-fill {
+    height: 100%;
+    background: linear-gradient(90deg, 
+      var(--saudi-green) 0%, 
+      var(--saudi-green-light) 100%);
+    border-radius: 9999px;
+    transition: width 500ms ease;
+  }
+  
+  .progress-gold {
+    width: 100%;
+    height: 8px;
+    background: oklch(from var(--desert-gold) l c h / 0.1);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+  
+  .progress-gold-fill {
+    height: 100%;
+    background: linear-gradient(90deg, 
+      var(--desert-gold) 0%, 
+      var(--desert-gold-light) 100%);
+    border-radius: 9999px;
+    transition: width 500ms ease;
+  }
+  
+  /* Enhanced Metric Cards */
+  .metric-card-saudi {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.98) 0%, 
+      oklch(from var(--saudi-green) l c h / 0.03) 100%);
+    border: 1px solid oklch(from var(--saudi-green) l c h / 0.1);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    position: relative;
+    overflow: hidden;
+    transition: all 300ms ease;
+  }
+  
+  .metric-card-saudi::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, 
+      oklch(from var(--saudi-green) l c h / 0.1) 0%, 
+      oklch(from var(--saudi-green) l c h / 0.05) 100%);
+    border-radius: 50%;
+    transform: translate(30%, -30%);
+  }
+  
+  .metric-card-saudi:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: oklch(from var(--saudi-green) l c h / 0.2);
+  }
+  
+  /* Data Visualization Enhancements */
+  .chart-container-saudi {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.98) 0%, 
+      oklch(from var(--riyadh-sky) l c h / 0.02) 100%);
+    border: 1px solid oklch(from var(--riyadh-sky) l c h / 0.1);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    position: relative;
+  }
+  
+  /* Enhanced Form Elements */
+  .input-saudi {
+    background: oklch(from var(--card) l c h / 0.8);
+    border: 1px solid oklch(from var(--saudi-green) l c h / 0.2);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    transition: all 200ms ease;
+    font-weight: 500;
+  }
+  
+  .input-saudi:focus {
+    border-color: var(--saudi-green);
+    box-shadow: 0 0 0 3px oklch(from var(--saudi-green) l c h / 0.1);
+    outline: none;
+    background: var(--card);
+  }
+  
+  .select-saudi {
+    background: oklch(from var(--card) l c h / 0.8);
+    border: 1px solid oklch(from var(--saudi-green) l c h / 0.2);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    transition: all 200ms ease;
+    font-weight: 500;
+  }
+  
+  .select-saudi:focus {
+    border-color: var(--saudi-green);
+    box-shadow: 0 0 0 3px oklch(from var(--saudi-green) l c h / 0.1);
+    outline: none;
+    background: var(--card);
+  }
+  
+  /* Enhanced Table Styles */
+  .table-saudi {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  
+  .table-saudi th {
+    background: linear-gradient(135deg, 
+      var(--saudi-green) 0%, 
+      var(--saudi-green-dark) 100%);
+    color: var(--pearl-white);
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  
+  .table-saudi td {
+    padding: 1rem;
+    border-bottom: 1px solid oklch(from var(--border) l c h / 0.5);
+    font-weight: 500;
+  }
+  
+  .table-saudi tr:hover {
+    background: oklch(from var(--saudi-green) l c h / 0.02);
+  }
+  
+  /* Dark Mode Adjustments */
+  .dark .customer-card-gradient,
+  .dark .messages-card-gradient,
+  .dark .profile-section-gradient,
+  .dark .shipping-card-gradient,
+  .dark .performance-card-gradient {
+    background: linear-gradient(135deg, 
+      oklch(from var(--card) l c h / 0.9) 0%, 
+      oklch(from var(--primary) l c h / 0.05) 100%);
+  }
+  
+  .dark .metric-card-saudi::before {
+    background: linear-gradient(135deg, 
+      oklch(from var(--primary) l c h / 0.1) 0%, 
+      oklch(from var(--primary) l c h / 0.05) 100%);
+  }
+  
+  .dark .input-saudi,
+  .dark .select-saudi {
+    background: oklch(from var(--card) l c h / 0.5);
+    border-color: oklch(from var(--primary) l c h / 0.3);
+  }
+  
+  .dark .table-saudi th {
+    background: linear-gradient(135deg, 
+      var(--primary) 0%, 
+      oklch(from var(--primary) l c h / 0.8) 100%);
+  }
+  
+  .dark .table-saudi tr:hover {
+    background: oklch(from var(--primary) l c h / 0.05);
   }
 }

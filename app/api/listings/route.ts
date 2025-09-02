@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { listingService } from '@/lib/catalog/listing-service';
+import { ListingService, SearchFilters } from '@/lib/catalog/listing-service';
+import { withAuth, getUserAgent, getClientIp } from '@/lib/auth/middleware';
+import { createPaginatedResponse, handleError, createSuccessResponse } from '@/lib/api/response';
+import { parseSearchParams, parseListingFilters } from '@/lib/api/utils';
 import { z } from 'zod';
 import { Condition } from '@prisma/client';
 
@@ -19,81 +22,204 @@ const listingQuerySchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = Object.fromEntries(request.nextUrl.searchParams);
-    const params = listingQuerySchema.parse(searchParams);
-    
-    // TODO: Fix Prisma connection issue with port 5433
-    // Temporary: Return empty results to prevent API errors
-    const result = {
-      listings: [],
-      pagination: {
-        total: 0,
-        page: params.page || 1,
-        limit: params.limit || 20,
-        totalPages: 0,
-      },
+    const searchParams = parseSearchParams(request);
+    const filters = parseListingFilters(request);
+
+    // Create search filters compatible with ListingService
+    const searchFilters: SearchFilters = {
+      categoryId: filters.category,
+      make: filters.make,
+      model: filters.model,
+      yearFrom: filters.yearFrom,
+      yearTo: filters.yearTo,
+      condition: filters.condition as any,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      city: filters.city,
+      sellerId: filters.sellerId,
+      isActive: filters.isActive,
+      isFeatured: filters.isFeatured,
+      search: searchParams.search,
+      sortBy: searchParams.sortBy as any,
+      sortOrder: searchParams.sortOrder,
     };
-    
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('Error fetching listings:', error);
-    
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid query parameters', details: error.issues },
-        { status: 400 }
-      );
-    }
-    
-    return NextResponse.json(
-      { error: 'Failed to fetch listings' },
-      { status: 500 }
+
+    const result = await ListingService.searchListings(
+      searchFilters,
+      searchParams.page,
+      searchParams.limit
     );
+
+    return createPaginatedResponse(
+      result.listings.map(listing => ({
+        id: listing.id,
+        titleAr: listing.titleAr,
+        titleEn: listing.titleEn,
+        description: listing.description,
+        descriptionEn: listing.descriptionEn,
+        sku: listing.sku,
+        priceSar: listing.priceSar,
+        originalPrice: listing.originalPrice,
+        condition: listing.condition,
+        quantity: listing.quantity,
+        make: listing.make,
+        model: listing.model,
+        fromYear: listing.fromYear,
+        toYear: listing.toYear,
+        engineSize: listing.engineSize,
+        fuelType: listing.fuelType,
+        transmission: listing.transmission,
+        bodyType: listing.bodyType,
+        oemNumbers: listing.oem_numbers,
+        city: listing.city,
+        district: listing.district,
+        viewCount: listing.viewCount,
+        isFeatured: listing.isFeatured,
+        publishedAt: listing.publishedAt,
+        createdAt: listing.createdAt,
+        updatedAt: listing.updatedAt,
+        seller: {
+          id: listing.seller.id,
+          businessName: listing.seller.businessName,
+          city: listing.seller.city,
+          verified: listing.seller.verified,
+          rating: listing.seller.rating,
+          user: listing.seller.user,
+        },
+        category: listing.category,
+        make_ref: listing.makeRef,
+        model_ref: listing.modelRef,
+        photos: listing.photos,
+        reviewCount: listing._count?.reviews || 0,
+      })),
+      result.pagination.page,
+      result.pagination.limit,
+      result.pagination.total,
+      'Listings retrieved successfully'
+    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 
 const createListingSchema = z.object({
-  titleAr: z.string().min(1).max(200),
-  titleEn: z.string().min(1).max(200).optional(),
-  description: z.string().optional(),
-  priceSar: z.number().positive(),
+  categoryId: z.string().cuid().optional(),
+  makeId: z.string().cuid().optional(),
+  modelId: z.string().cuid().optional(),
+  sku: z.string().max(50).optional(),
+  titleAr: z.string().min(2, 'Title must be at least 2 characters').max(200),
+  titleEn: z.string().max(200).optional(),
+  description: z.string().max(2000).optional(),
+  descriptionEn: z.string().max(2000).optional(),
   condition: z.nativeEnum(Condition),
-  make: z.string().min(1),
-  model: z.string().min(1),
-  fromYear: z.number().min(1900).max(new Date().getFullYear() + 1),
-  toYear: z.number().min(1900).max(new Date().getFullYear() + 1),
-  city: z.string().min(1),
-  // For POC, we'll use a dummy seller ID
-  sellerId: z.string().default('dummy-seller-1'),
+  priceSar: z.number().positive().max(1000000, 'Price must be less than 1,000,000 SAR'),
+  originalPrice: z.number().positive().optional(),
+  quantity: z.number().positive().default(1),
+  minQuantity: z.number().positive().default(1),
+  weight: z.number().positive().optional(),
+  dimensions: z.string().max(100).optional(),
+  // Vehicle compatibility
+  make: z.string().max(50).optional(),
+  model: z.string().max(50).optional(),
+  fromYear: z.number().min(1950).max(new Date().getFullYear() + 2).optional(),
+  toYear: z.number().min(1950).max(new Date().getFullYear() + 2).optional(),
+  engineSize: z.string().max(20).optional(),
+  fuelType: z.string().max(20).optional(),
+  transmission: z.string().max(20).optional(),
+  bodyType: z.string().max(20).optional(),
+  oemNumbers: z.array(z.string().max(50)).optional(),
+  // Location
+  city: z.string().min(2, 'City is required').max(50),
+  district: z.string().max(50).optional(),
+  // Photos
+  photos: z.array(z.object({
+    url: z.string().url('Invalid photo URL'),
+    filename: z.string().optional(),
+    alt: z.string().optional(),
+    sortOrder: z.number().optional(),
+  })).optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const data = createListingSchema.parse(body);
-    
-    // For POC, ensure we have a dummy seller
-    const dummySellerId = 'dummy-seller-1';
-    
-    const listing = await listingService.createListing({
-      ...data,
-      sellerId: dummySellerId,
+    const { context, response } = await withAuth(request, { 
+      requiredRoles: ['SELLER', 'ADMIN'] 
     });
     
-    return NextResponse.json(listing, { status: 201 });
-  } catch (error) {
-    console.error('Error creating listing:', error);
-    
-    if (error instanceof z.ZodError) {
+    if (response) {
+      return response;
+    }
+
+    if (!context) {
       return NextResponse.json(
-        { error: 'Invalid listing data', details: error.issues },
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const data = createListingSchema.parse(body);
+
+    // Get seller profile for the authenticated user
+    let sellerId = '';
+    if (context.user.role === 'SELLER') {
+      // For sellers, use their own seller profile
+      const { SellerService } = await import('@/lib/sellers/seller-service');
+      const seller = await SellerService.getSellerByUserId(context.user.id);
+      
+      if (!seller) {
+        return NextResponse.json(
+          { error: 'Seller profile not found. Please complete your seller registration.' },
+          { status: 400 }
+        );
+      }
+
+      if (seller.status !== 'APPROVED' || !seller.verified) {
+        return NextResponse.json(
+          { error: 'Seller account is not verified. Please wait for approval.' },
+          { status: 403 }
+        );
+      }
+
+      sellerId = seller.id;
+    } else if (context.user.role === 'ADMIN') {
+      // Admins can specify sellerId
+      if (!body.sellerId) {
+        return NextResponse.json(
+          { error: 'Seller ID is required for admin listing creation' },
+          { status: 400 }
+        );
+      }
+      sellerId = body.sellerId;
+    }
+
+    // Validate year range
+    if (data.fromYear && data.toYear && data.fromYear > data.toYear) {
+      return NextResponse.json(
+        { error: 'From year cannot be greater than to year' },
         { status: 400 }
       );
     }
+
+    const listing = await ListingService.createListing({
+      ...data,
+      sellerId,
+    });
     
-    return NextResponse.json(
-      { error: 'Failed to create listing' },
-      { status: 500 }
-    );
+    return createSuccessResponse({
+      message: 'Listing created successfully',
+      listing: {
+        id: listing.id,
+        titleAr: listing.titleAr,
+        titleEn: listing.titleEn,
+        sku: listing.sku,
+        priceSar: listing.priceSar,
+        condition: listing.condition,
+        status: listing.status,
+        createdAt: listing.createdAt,
+      },
+    }, 'Listing created successfully', 201);
+  } catch (error) {
+    return handleError(error);
   }
 }
