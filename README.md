@@ -290,23 +290,3 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for deta
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
-
-- [Next.js](https://nextjs.org/) for the incredible framework
-- [Shadcn/ui](https://ui.shadcn.com/) for the beautiful UI components
-- [Prisma](https://prisma.io/) for the excellent database toolkit
-- [Radix UI](https://www.radix-ui.com/) for accessible UI primitives
-- [Tailwind CSS](https://tailwindcss.com/) for utility-first CSS
-
-## 📞 Contact
-
-**Project Maintainer**: Omar
-**Email**: [your-email@example.com]
-**GitHub**: [@yourusername](https://github.com/yourusername)
-
----
-
-<div align="center">
-  <p>Built with ❤️ for the Saudi Arabian auto parts community</p>
-  <p>🇸🇦 Made in Saudi Arabia</p>
-</div>
