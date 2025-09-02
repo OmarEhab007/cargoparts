@@ -227,3 +227,10 @@ PROJECT_TODO.md
 TODO.md
 *TODO*
 *todo*
+
+# Development documentation files
+DATABASE_RESTORE_INSTRUCTIONS.md
+DESIGN_TOKENS.md
+ProjectDescription.md
+*_INSTRUCTIONS.md
+*_SUMMARY.md
