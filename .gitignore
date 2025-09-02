@@ -215,3 +215,15 @@ sourcemap.js
 /public/uploads/
 *.local.json
 CARD_ENHANCEMENTS_SUMMARY.md
+
+# Claude AI Assistant files
+.claude/
+CLAUDE.md
+*claude*
+*CLAUDE*
+
+# Development TODO files
+PROJECT_TODO.md
+TODO.md
+*TODO*
+*todo*
