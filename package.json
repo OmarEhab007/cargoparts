@@ -62,7 +62,7 @@
     "postinstall": "prisma generate",
     "analyze": "cross-env ANALYZE=true next build",
     "clean": "rm -rf .next out dist build",
-    "prepare": "husky install"
+    "prepare": "husky install || true"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
