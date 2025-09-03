@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma';
-import { CartService } from './cart-service';
+// import { CartService } from './cart-service';
 import type { Order, OrderStatus, OrderItem, Address } from '@prisma/client';
 
 export interface CreateOrderInput {
@@ -234,7 +234,7 @@ export class OrderService {
    * Get order by ID with full details
    */
   static async getOrderById(orderId: string, userId?: string): Promise<OrderWithDetails | null> {
-    const where: any = { id: orderId };
+    const where: Record<string, unknown> = { id: orderId };
     
     // If userId provided, ensure user can access this order
     if (userId) {
@@ -407,7 +407,7 @@ export class OrderService {
   }> {
     const skip = (page - 1) * limit;
     
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (filters.status) {
       where.status = filters.status;
@@ -429,14 +429,14 @@ export class OrderService {
 
     if (filters.dateFrom || filters.dateTo) {
       where.createdAt = {};
-      if (filters.dateFrom) where.createdAt.gte = filters.dateFrom;
-      if (filters.dateTo) where.createdAt.lte = filters.dateTo;
+      if (filters.dateFrom) (where.createdAt as Record<string, unknown>).gte = filters.dateFrom;
+      if (filters.dateTo) (where.createdAt as Record<string, unknown>).lte = filters.dateTo;
     }
 
     if (filters.minTotal || filters.maxTotal) {
       where.total = {};
-      if (filters.minTotal) where.total.gte = filters.minTotal;
-      if (filters.maxTotal) where.total.lte = filters.maxTotal;
+      if (filters.minTotal) (where.total as Record<string, unknown>).gte = filters.minTotal;
+      if (filters.maxTotal) (where.total as Record<string, unknown>).lte = filters.maxTotal;
     }
 
     const [orders, total] = await Promise.all([
@@ -556,7 +556,7 @@ export class OrderService {
     ordersByStatus: Record<OrderStatus, number>;
     recentOrders: number;
   }> {
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     
     if (filters.sellerId) {
       where.items = {

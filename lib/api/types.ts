@@ -1,18 +1,18 @@
 // Standard API response types for consistent error handling and responses
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
   message?: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export interface ApiError {
   code: string;
   message: string;
   messageAr?: string;
-  details?: any;
+  details?: Record<string, unknown>;
   statusCode: number;
 }
 
@@ -47,7 +47,7 @@ export interface SearchParams {
   search?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
 }
 
 // API Error Codes

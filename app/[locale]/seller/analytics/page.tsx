@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLocale } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,16 +10,16 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { SARSymbol } from '@/components/ui/currency-symbol';
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-  ComposedChart, ScatterChart, Scatter, FunnelChart, Funnel, LabelList
+  ComposedChart, Line
 } from 'recharts';
 import {
-  TrendingUp, TrendingDown, DollarSign, ShoppingCart, Package,
-  Users, Eye, MousePointer, Target, Activity, Calendar,
-  Download, Filter, RefreshCw, Info, AlertCircle, Clock,
-  Zap, Award, Globe, Percent, ArrowUpRight, ArrowDownRight
+  TrendingUp, TrendingDown, DollarSign, ShoppingCart,
+  Users, MousePointer,
+  Download, RefreshCw, AlertCircle, Clock,
+  Zap, Award, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 
 // Revenue trend data
@@ -96,7 +96,7 @@ export default function SellerAnalyticsPage() {
   const locale = useLocale();
   const isArabic = locale === 'ar';
   const [timeRange, setTimeRange] = useState('month');
-  const [selectedMetric, setSelectedMetric] = useState('revenue');
+  // const [selectedMetric, setSelectedMetric] = useState('revenue'); // Reserved for future use
   const [isLoading, setIsLoading] = useState(false);
 
   const refreshData = () => {

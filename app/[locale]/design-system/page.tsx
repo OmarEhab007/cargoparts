@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -7,13 +6,9 @@ import {
   Car, 
   ShoppingCart, 
   Search, 
-  Star, 
-  MapPin, 
-  Phone,
+  Star,
   Package,
-  TrendingUp,
-  Shield,
-  Clock
+  Shield
 } from "lucide-react"
 
 export default function DesignSystemPage() {

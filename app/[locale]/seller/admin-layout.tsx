@@ -526,7 +526,7 @@ export default function SellerAdminLayout({
                               {isArabic ? item.labelAr : item.labelEn}
                             </span>
                             {item.badge && (
-                              <Badge variant={item.badgeType as any || 'default'} className="ml-auto">
+                              <Badge variant={(item.badgeType as 'default' | 'secondary' | 'destructive' | 'outline') || 'default'} className="ml-auto">
                                 {item.badge}
                               </Badge>
                             )}
@@ -546,7 +546,7 @@ export default function SellerAdminLayout({
                       <TooltipContent side="right">
                         <p>{isArabic ? item.labelAr : item.labelEn}</p>
                         {item.badge && (
-                          <Badge variant={item.badgeType as any || 'default'} className="ml-2">
+                          <Badge variant={(item.badgeType as 'default' | 'secondary' | 'destructive' | 'outline') || 'default'} className="ml-2">
                             {item.badge}
                           </Badge>
                         )}

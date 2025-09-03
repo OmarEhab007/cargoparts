@@ -234,7 +234,7 @@ export function getUserAgent(request: NextRequest): string {
  * Create auth response with tokens
  */
 export function createAuthResponse(
-  data: any,
+  data: Record<string, unknown>,
   tokens: { token: string; refreshToken: string },
   options: { status?: number } = {}
 ): NextResponse {
@@ -264,7 +264,7 @@ export function createAuthResponse(
 /**
  * Clear auth cookies
  */
-export function clearAuthResponse(data: any, options: { status?: number } = {}): NextResponse {
+export function clearAuthResponse(data: Record<string, unknown>, options: { status?: number } = {}): NextResponse {
   const response = NextResponse.json(data, { status: options.status || 200 });
 
   response.cookies.delete('cargoparts-session');

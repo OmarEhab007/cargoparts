@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./card"
+import { Card } from "./card"
 
 // Enhanced Product Card
 export function ProductCard({ className, ...props }: React.ComponentProps<typeof Card>) {

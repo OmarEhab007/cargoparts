@@ -93,13 +93,13 @@ export const sortSchema = z.object({
 /**
  * Generate cache key for API responses
  */
-export function generateCacheKey(prefix: string, params: Record<string, any>): string {
+export function generateCacheKey(prefix: string, params: Record<string, unknown>): string {
   const sortedParams = Object.keys(params)
     .sort()
     .reduce((result, key) => {
       result[key] = params[key];
       return result;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, unknown>);
 
   const paramString = JSON.stringify(sortedParams);
   return `${prefix}:${Buffer.from(paramString).toString('base64')}`;
@@ -296,7 +296,7 @@ export function deepClone<T>(obj: T): T {
   if (typeof obj === 'object') {
     const copy = {} as T;
     Object.keys(obj as object).forEach(key => {
-      (copy as any)[key] = deepClone((obj as any)[key]);
+      (copy as Record<string, unknown>)[key] = deepClone((obj as Record<string, unknown>)[key]);
     });
     return copy;
   }
@@ -306,7 +306,7 @@ export function deepClone<T>(obj: T): T {
 /**
  * Remove undefined values from object
  */
-export function removeUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
+export function removeUndefined<T extends Record<string, unknown>>(obj: T): Partial<T> {
   const result: Partial<T> = {};
   
   Object.keys(obj).forEach(key => {

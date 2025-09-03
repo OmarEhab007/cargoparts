@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useLocale } from 'next-intl';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
+// import { Checkbox } from '@/components/ui/checkbox'; // Reserved for future use
 import { Separator } from '@/components/ui/separator';
 import { SARSymbol } from '@/components/ui/currency-symbol';
 import { cn } from '@/lib/utils';
@@ -31,7 +32,7 @@ import {
   User,
   Package,
   Award,
-  Sparkles
+  // Sparkles - Reserved for future use
 } from 'lucide-react';
 
 interface CheckoutItem {
@@ -137,7 +138,7 @@ export function MultiStepCheckout({
   const currentSteps = steps[locale as keyof typeof steps];
   const currentStepKey = currentSteps[currentStep].key;
   
-  const updateCheckoutData = (section: keyof CheckoutData, data: any) => {
+  const updateCheckoutData = (section: keyof CheckoutData, data: Partial<CheckoutData[keyof CheckoutData]>) => {
     setCheckoutData(prev => ({
       ...prev,
       [section]: { ...prev[section], ...data }
@@ -192,7 +193,7 @@ export function MultiStepCheckout({
     }
     acc[item.seller.id].items.push(item);
     return acc;
-  }, {} as Record<string, { seller: any; items: CheckoutItem[] }>);
+  }, {} as Record<string, { seller: CheckoutItem['seller']; items: CheckoutItem[] }>);
 
   const renderProgressBar = () => (
     <div className="w-full mb-8">
@@ -309,10 +310,12 @@ export function MultiStepCheckout({
                 <div key={item.id} className="flex gap-4 p-4 bg-muted/30 rounded-lg">
                   <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
                     {item.photos.length > 0 ? (
-                      <img 
+                      <Image 
                         src={item.photos[0].url} 
                         alt={isArabic ? item.titleAr : item.titleEn || item.titleAr}
                         className="w-full h-full object-cover rounded-lg"
+                        width={64}
+                        height={64}
                       />
                     ) : (
                       <Package className="h-6 w-6 text-muted-foreground" />

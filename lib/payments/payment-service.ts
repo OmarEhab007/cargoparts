@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db/prisma';
 import { env } from '@/lib/env.mjs';
-import type { PaymentProvider, PaymentStatus, Order } from '@prisma/client';
+import type { PaymentProvider, PaymentStatus } from '@prisma/client';
 
 export interface CreatePaymentInput {
   orderId: string;
@@ -75,10 +75,10 @@ export class PaymentService {
     
     switch (input.provider) {
       case 'TAP':
-        providerResponse = await this.createTapPayment(payment.id, order, input);
+        providerResponse = await this.createTapPayment(payment.id);
         break;
       case 'HYPERPAY':
-        providerResponse = await this.createHyperPayPayment(payment.id, order, input);
+        providerResponse = await this.createHyperPayPayment(payment.id);
         break;
       default:
         throw new Error(`Payment provider ${input.provider} not supported`);
@@ -108,7 +108,7 @@ export class PaymentService {
   static async handleWebhook(
     provider: PaymentProvider,
     event: string,
-    payload: any,
+    payload: Record<string, unknown>,
     signature?: string
   ): Promise<void> {
     // Log webhook for debugging
@@ -125,10 +125,10 @@ export class PaymentService {
     try {
       switch (provider) {
         case 'TAP':
-          await this.handleTapWebhook(event, payload, signature);
+          await this.handleTapWebhook(event, payload);
           break;
         case 'HYPERPAY':
-          await this.handleHyperPayWebhook(event, payload, signature);
+          await this.handleHyperPayWebhook(event, payload);
           break;
         default:
           throw new Error(`Webhook for provider ${provider} not supported`);
@@ -244,7 +244,7 @@ export class PaymentService {
   }
 
   // Provider-specific implementations (stubs for now)
-  private static async createTapPayment(paymentId: string, order: Order, input: CreatePaymentInput) {
+  private static async createTapPayment(paymentId: string) {
     // TODO: Implement TAP payment integration
     // This would typically involve calling TAP's API to create a charge
     
@@ -260,7 +260,7 @@ export class PaymentService {
     };
   }
 
-  private static async createHyperPayPayment(paymentId: string, order: Order, input: CreatePaymentInput) {
+  private static async createHyperPayPayment(paymentId: string) {
     // TODO: Implement HyperPay integration
     
     if (!env.HYPERPAY_ACCESS_TOKEN) {
@@ -275,7 +275,7 @@ export class PaymentService {
     };
   }
 
-  private static async handleTapWebhook(event: string, payload: any, signature?: string) {
+  private static async handleTapWebhook(event: string, payload: Record<string, unknown>) {
     // TODO: Verify webhook signature
     // TODO: Handle TAP webhook events
     
@@ -288,7 +288,7 @@ export class PaymentService {
     // }
   }
 
-  private static async handleHyperPayWebhook(event: string, payload: any, signature?: string) {
+  private static async handleHyperPayWebhook(event: string, payload: Record<string, unknown>) {
     // TODO: Verify webhook signature
     // TODO: Handle HyperPay webhook events
     
@@ -299,12 +299,12 @@ export class PaymentService {
    * Get payment statistics
    */
   static async getPaymentStats(filters: { dateFrom?: Date; dateTo?: Date } = {}) {
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     
     if (filters.dateFrom || filters.dateTo) {
       where.createdAt = {};
-      if (filters.dateFrom) where.createdAt.gte = filters.dateFrom;
-      if (filters.dateTo) where.createdAt.lte = filters.dateTo;
+      if (filters.dateFrom) (where.createdAt as Record<string, unknown>).gte = filters.dateFrom;
+      if (filters.dateTo) (where.createdAt as Record<string, unknown>).lte = filters.dateTo;
     }
 
     const [

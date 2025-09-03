@@ -27,9 +27,7 @@ import {
   Eye,
   Sparkles,
   CheckCircle,
-  Award,
-  Zap,
-  ZoomIn,
+  Zap  // Used in component
   ChevronLeft,
   ChevronRight,
   X
@@ -84,11 +82,11 @@ const conditionLabels: Record<string, Record<string, string>> = {
   USED: { ar: 'مستعمل', en: 'Used' },
 };
 
-const conditionColors = {
-  NEW: 'bg-green-500',
-  REFURBISHED: 'bg-blue-500', 
-  USED: 'bg-amber-500',
-};
+// const conditionColors = {
+//   NEW: 'bg-green-500',
+//   REFURBISHED: 'bg-blue-500',
+//   USED: 'bg-amber-500',
+// };
 
 export function QuickPreviewModal({ 
   listing, 

@@ -15,7 +15,6 @@ import {
   Clock,
   MessageSquare,
   Headphones,
-  Building,
   Users
 } from 'lucide-react';
 

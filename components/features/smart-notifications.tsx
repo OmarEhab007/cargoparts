@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLocale } from 'next-intl';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SaudiCard, SaudiHeader } from '@/components/ui/saudi-theme';
+import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Bell,
   BellRing,
@@ -16,12 +16,10 @@ import {
   TrendingUp,
   Users,
   ShoppingCart,
-  AlertTriangle,
   CheckCircle,
   Clock,
   MessageSquare,
   Target,
-  Calendar,
   Zap,
   Brain,
   Settings,
@@ -31,6 +29,18 @@ import {
 } from 'lucide-react';
 
 // Smart Notification Interfaces
+interface NotificationData {
+  productId?: string;
+  currentStock?: number;
+  predictedDays?: number;
+  category?: string;
+  growth?: number;
+  brand?: string;
+  customerId?: string;
+  orderValue?: number;
+  orderCount?: number;
+}
+
 interface SmartNotification {
   id: string;
   type: 'inventory' | 'sales' | 'customer' | 'market' | 'finance' | 'operations';
@@ -39,7 +49,7 @@ interface SmartNotification {
   message: string;
   action?: string;
   actionUrl?: string;
-  data: any;
+  data: NotificationData;
   isRead: boolean;
   isSmartGenerated: boolean;
   confidence?: number;
@@ -245,7 +255,7 @@ export function SmartNotificationCenter() {
     );
   };
 
-  const updateSettings = (key: string, value: any) => {
+  const updateSettings = (key: keyof NotificationSettings, value: NotificationSettings[keyof NotificationSettings]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 

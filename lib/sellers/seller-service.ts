@@ -98,8 +98,19 @@ export class SellerService {
    */
   static async getSellerById(id: string): Promise<(Seller & { 
     user: User;
-    verificationDocs: any[];
-    bankAccounts: any[];
+    verificationDocs: Array<{
+      id: string;
+      type: string;
+      filename: string;
+      status: string;
+      createdAt: Date;
+    }>;
+    bankAccounts: Array<{
+      id: string;
+      bankName: string;
+      accountNumber: string;
+      isActive: boolean;
+    }>;
     _count: { listings: number };
   }) | null> {
     return prisma.seller.findUnique({
@@ -155,8 +166,8 @@ export class SellerService {
   /**
    * Update seller status
    */
-  static async updateSellerStatus(id: string, status: SellerStatus, verifiedBy?: string): Promise<Seller> {
-    const updateData: any = {
+  static async updateSellerStatus(id: string, status: SellerStatus): Promise<Seller> {
+    const updateData: Record<string, unknown> = {
       status,
       ...(status === 'APPROVED' && { verified: true, verifiedAt: new Date() }),
     };
@@ -184,7 +195,7 @@ export class SellerService {
   }> {
     const skip = (page - 1) * limit;
     
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (filters.city) {
       where.city = { contains: filters.city, mode: 'insensitive' };
@@ -268,7 +279,7 @@ export class SellerService {
   /**
    * Upload verification document
    */
-  static async uploadVerificationDoc(input: VerificationDocInput): Promise<any> {
+  static async uploadVerificationDoc(input: VerificationDocInput) {
     return prisma.verificationDoc.create({
       data: {
         sellerId: input.sellerId,
@@ -288,7 +299,7 @@ export class SellerService {
     status: VerificationStatus,
     reviewedBy: string,
     notes?: string
-  ): Promise<any> {
+  ) {
     return prisma.verificationDoc.update({
       where: { id: docId },
       data: {
@@ -303,7 +314,7 @@ export class SellerService {
   /**
    * Get seller verification documents
    */
-  static async getVerificationDocs(sellerId: string): Promise<any[]> {
+  static async getVerificationDocs(sellerId: string) {
     return prisma.verificationDoc.findMany({
       where: { sellerId },
       orderBy: { createdAt: 'desc' },
@@ -319,7 +330,7 @@ export class SellerService {
     accountNumber: string;
     iban: string;
     accountHolder: string;
-  }): Promise<any> {
+  }) {
     // Deactivate other accounts first (only one active at a time)
     await prisma.bankAccount.updateMany({
       where: { sellerId: data.sellerId },
@@ -337,7 +348,7 @@ export class SellerService {
   /**
    * Get seller bank accounts
    */
-  static async getBankAccounts(sellerId: string): Promise<any[]> {
+  static async getBankAccounts(sellerId: string) {
     return prisma.bankAccount.findMany({
       where: { sellerId },
       orderBy: { createdAt: 'desc' },
@@ -462,12 +473,7 @@ export class SellerService {
   /**
    * Get seller dashboard data
    */
-  static async getSellerDashboard(sellerId: string): Promise<{
-    seller: Seller;
-    stats: any;
-    recentOrders: any[];
-    recentListings: any[];
-  }> {
+  static async getSellerDashboard(sellerId: string) {
     const [seller, stats, recentOrders, recentListings] = await Promise.all([
       this.getSellerById(sellerId),
       this.getSellerStats(sellerId),

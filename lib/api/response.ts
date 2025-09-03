@@ -3,7 +3,6 @@ import { ZodError } from 'zod';
 import { Prisma } from '@prisma/client';
 import { 
   ApiResponse, 
-  ApiError, 
   PaginatedResponse, 
   ValidationError, 
   API_ERROR_CODES, 
@@ -35,8 +34,7 @@ export function createPaginatedResponse<T>(
   data: T[],
   page: number,
   limit: number,
-  total: number,
-  message?: string
+  total: number
 ): NextResponse {
   const totalPages = Math.ceil(total / limit);
   
@@ -62,16 +60,16 @@ export function createErrorResponse(
   code: ApiErrorCode,
   message: string,
   messageAr?: string,
-  details?: any,
+  details?: Record<string, unknown>,
   statusCode: number = HTTP_STATUS.BAD_REQUEST
 ): NextResponse {
-  const error: ApiError = {
-    code,
-    message,
-    messageAr,
-    details,
-    statusCode,
-  };
+  // const error: ApiError = {
+  //   code,
+  //   message,
+  //   messageAr,
+  //   details,
+  //   statusCode,
+  // };
 
   const response: ApiResponse = {
     success: false,

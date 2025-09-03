@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useLocale } from 'next-intl';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+// import { Input } from '@/components/ui/input'; // Reserved for future use
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
@@ -22,29 +22,9 @@ import {
   Settings,
   Plus,
   Edit,
-  Trash2,
-  Eye,
-  TrendingUp,
-  TrendingDown,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  XCircle,
-  Target,
-  Star,
-  Truck,
-  Warehouse,
-  Building,
-  Globe,
-  Calendar,
-  Activity,
-  Zap,
-  RefreshCw,
-  Filter,
-  Download,
-  Upload,
-  Copy,
-  Share,
+  // Commonly used icons
+  Star, Truck, Warehouse, Building, Globe,
+  TrendingUp, TrendingDown, Eye, Download, Activity
 } from 'lucide-react';
 
 // Multi-Store Management Interfaces

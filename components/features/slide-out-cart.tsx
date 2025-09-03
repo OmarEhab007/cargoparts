@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
+import { useState, Fragment } from 'react';
 import { useLocale } from 'next-intl';
 import { Dialog, Transition } from '@headlessui/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+// import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Reserved for future use
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SARSymbol } from '@/components/ui/currency-symbol';
@@ -25,9 +25,7 @@ import {
   Star,
   CheckCircle,
   AlertTriangle,
-  Heart,
-  Share2,
-  Gift,
+  // Heart, Share2, Gift - Reserved for future use
   Zap,
   CreditCard,
   Lock,
@@ -73,7 +71,7 @@ export function SlideOutCart({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
-  className
+  // className, // Available for future styling - currently unused
 }: SlideOutCartProps) {
   const locale = useLocale();
   const isArabic = locale === 'ar';

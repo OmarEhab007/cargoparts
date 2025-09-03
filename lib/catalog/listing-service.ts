@@ -1,7 +1,6 @@
 
 import { prisma } from '@/lib/db/prisma';
 import { Prisma, Condition, ListingStatus } from '@prisma/client';
-import { z } from 'zod';
 
 export interface CreateListingInput {
   sellerId: string;
@@ -168,7 +167,7 @@ export class ListingService {
    * Get a single listing by ID
    */
   static async getListingById(id: string, includeInactive = false) {
-    const where: any = { id };
+    const where: Record<string, unknown> = { id };
     
     if (!includeInactive) {
       where.isActive = true;
@@ -482,7 +481,7 @@ export class ListingService {
    * Update listing status
    */
   static async updateListingStatus(id: string, status: ListingStatus): Promise<void> {
-    const updateData: any = { status };
+    const updateData: Record<string, unknown> = { status };
     
     if (status === 'PUBLISHED') {
       updateData.publishedAt = new Date();

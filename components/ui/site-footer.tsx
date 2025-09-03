@@ -2,21 +2,16 @@
 
 import { useLocale } from 'next-intl';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
   Package,
   Phone,
   Mail,
-  MapPin,
   Facebook,
   Twitter,
   Instagram,
   Youtube,
   Shield,
-  Award,
-  Clock,
   CheckCircle2
 } from 'lucide-react';
 

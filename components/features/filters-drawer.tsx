@@ -8,7 +8,6 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
   SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,6 @@ import { Separator } from '@/components/ui/separator';
 import { 
   Filter, 
   X, 
-  SlidersHorizontal,
   Star,
   MapPin,
   Calendar,

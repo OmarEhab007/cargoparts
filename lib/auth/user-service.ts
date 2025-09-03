@@ -1,8 +1,7 @@
 import { prisma } from '@/lib/db/prisma';
 import { OtpService } from './otp';
 import { SessionService } from './session';
-import type { User, Role, UserStatus, OtpType } from '@prisma/client';
-import { hash } from 'bcryptjs';
+import type { User, Role, UserStatus } from '@prisma/client';
 import { z } from 'zod';
 
 export interface CreateUserInput {
@@ -347,7 +346,13 @@ export class UserService {
    */
   static async getUserProfile(id: string): Promise<{
     user: User;
-    seller?: any;
+    seller?: {
+      id: string;
+      businessName: string;
+      _count: {
+        listings: number;
+      };
+    };
     stats: {
       totalOrders: number;
       totalSpent: number;
@@ -419,7 +424,7 @@ export class UserService {
     const { search, role, status, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (search) {
       where.OR = [

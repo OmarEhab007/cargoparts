@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
-import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,21 +15,13 @@ import {
   Shield, 
   Truck, 
   Users,
-  ChevronRight,
-  Package,
-  Zap,
-  BadgeCheck,
   MapPin,
-  ShoppingBag,
   Star,
   CheckCircle2,
-  Clock,
-  Award,
   TrendingUp,
-  Heart,
-  PhoneCall,
   DollarSign,
-  Sparkles
+  Sparkles,
+  Zap
 } from 'lucide-react';
 
 interface FeaturedListing {

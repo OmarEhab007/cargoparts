@@ -3,7 +3,7 @@ import { env } from '@/lib/env.mjs';
 import type { OtpType } from '@prisma/client';
 import crypto from 'crypto';
 
-const OTP_LENGTH = 6;
+// const OTP_LENGTH = 6;
 const OTP_EXPIRY_MINUTES = 10;
 const MAX_OTP_ATTEMPTS = 5;
 const OTP_RATE_LIMIT_MINUTES = 60; // 1 hour

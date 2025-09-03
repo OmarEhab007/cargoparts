@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, Mic, X, Clock, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ export function MobileSearch({ onSearch, placeholder, className }: MobileSearchP
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Sample suggestions (in real app, these would come from API)
-  const sampleSuggestions: SearchSuggestion[] = isArabic ? [
+  const sampleSuggestions: SearchSuggestion[] = useMemo(() => isArabic ? [
     { id: '1', text: 'محرك كامري', type: 'trending', category: 'محركات' },
     { id: '2', text: 'فرامل أكورد', type: 'trending', category: 'فرامل' },
     { id: '3', text: 'ناقل حركة نيسان', type: 'trending', category: 'ناقل الحركة' },
@@ -44,7 +44,7 @@ export function MobileSearch({ onSearch, placeholder, className }: MobileSearchP
     { id: '4', text: 'LED headlights', type: 'recent', category: 'Electrical' },
     { id: '5', text: 'Michelin tires', type: 'recent', category: 'Tires' },
     { id: '6', text: 'Air conditioning', type: 'suggestion', category: 'Electrical' },
-  ];
+  ], [isArabic]);
 
   useEffect(() => {
     // Filter suggestions based on query
@@ -57,7 +57,7 @@ export function MobileSearch({ onSearch, placeholder, className }: MobileSearchP
       // Show trending and recent when no query
       setSuggestions(sampleSuggestions.slice(0, 6));
     }
-  }, [query]);
+  }, [query, sampleSuggestions]);
 
   useEffect(() => {
     // Close search when clicking outside

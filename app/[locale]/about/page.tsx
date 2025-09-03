@@ -2,9 +2,8 @@
 
 import { useLocale } from 'next-intl';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
   Shield,
@@ -16,14 +15,10 @@ import {
   Clock,
   Target,
   Heart,
-  Sparkles,
-  CheckCircle2,
   TrendingUp,
   Handshake,
   Globe,
   Building,
-  Zap,
-  Star,
   Calendar,
   Package
 } from 'lucide-react';
@@ -128,26 +123,27 @@ export default function AboutPage() {
     }
   ];
 
-  const team = [
-    {
-      name: isArabic ? 'أحمد العبدالله' : 'Ahmed Al-Abdullah',
-      role: isArabic ? 'الرئيس التنفيذي' : 'Chief Executive Officer',
-      experience: isArabic ? '15 سنة خبرة في قطاع السيارات' : '15 years in automotive sector',
-      image: '/team/ceo.jpg' // Placeholder
-    },
-    {
-      name: isArabic ? 'فاطمة الزهراني' : 'Fatima Al-Zahrani',
-      role: isArabic ? 'مديرة التقنية' : 'Chief Technology Officer',
-      experience: isArabic ? '12 سنة في تطوير التقنيات' : '12 years in technology development',
-      image: '/team/cto.jpg' // Placeholder
-    },
-    {
-      name: isArabic ? 'محمد القحطاني' : 'Mohammed Al-Qahtani',
-      role: isArabic ? 'مدير العمليات' : 'Chief Operations Officer',
-      experience: isArabic ? '10 سنوات في إدارة العمليات' : '10 years in operations management',
-      image: '/team/coo.jpg' // Placeholder
-    }
-  ];
+  // Team data - kept for future use
+  // const team = [
+  //   {
+  //     name: isArabic ? 'أحمد العبدالله' : 'Ahmed Al-Abdullah',
+  //     role: isArabic ? 'الرئيس التنفيذي' : 'Chief Executive Officer',
+  //     experience: isArabic ? '15 سنة خبرة في قطاع السيارات' : '15 years in automotive sector',
+  //     image: '/team/ceo.jpg' // Placeholder
+  //   },
+  //   {
+  //     name: isArabic ? 'فاطمة الزهراني' : 'Fatima Al-Zahrani',
+  //     role: isArabic ? 'مديرة التقنية' : 'Chief Technology Officer',
+  //     experience: isArabic ? '12 سنة في تطوير التقنيات' : '12 years in technology development',
+  //     image: '/team/cto.jpg' // Placeholder
+  //   },
+  //   {
+  //     name: isArabic ? 'محمد القحطاني' : 'Mohammed Al-Qahtani',
+  //     role: isArabic ? 'مدير العمليات' : 'Chief Operations Officer',
+  //     experience: isArabic ? '10 سنوات في إدارة العمليات' : '10 years in operations management',
+  //     image: '/team/coo.jpg' // Placeholder
+  //   }
+  // ];
 
   return (
     <div className="min-h-screen bg-background">

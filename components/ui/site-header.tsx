@@ -5,7 +5,6 @@ import { useLocale } from 'next-intl';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
   SheetContent,
@@ -14,14 +13,10 @@ import {
 import { CartBadge } from '@/components/features/cart-badge';
 import { 
   Menu,
-  Search,
-  ShoppingCart,
   User,
   Globe,
-  Heart,
   Package,
-  Phone,
-  ChevronDown
+  Phone
 } from 'lucide-react';
 
 export function SiteHeader() {
