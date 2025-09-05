@@ -1,4 +1,4 @@
-# 🚗 Cargo Parts - KSA Auto Parts Marketplace
+#  Cargo Parts - KSA Auto Parts Marketplace
 
 <div align="center">
 
