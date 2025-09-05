@@ -20,13 +20,13 @@ Cargo Parts is a modern, production-ready marketplace platform specifically desi
 
 ###  Key Highlights
 
-- ** Bilingual Support**: Arabic-first design with RTL support and English fallback
-- ** Smart Search**: Advanced search with vehicle compatibility matching (year overlap logic)
-- ** Multi-Role System**: Buyers, Sellers, Admins with comprehensive role-based access control
-- ** Responsive Design**: Mobile-first approach with progressive web app capabilities
-- ** Enterprise Security**: JWT authentication, OTP verification, and comprehensive authorization
-- ** Payment Integration**: Saudi-specific payment gateways (Tap, HyperPay, MADA)
-- ** Business Intelligence**: Real-time analytics and reporting for sellers
+- **Bilingual Support**: Arabic-first design with RTL support and English fallback
+- **Smart Search**: Advanced search with vehicle compatibility matching (year overlap logic)
+- **Multi-Role System**: Buyers, Sellers, Admins with comprehensive role-based access control
+- **Responsive Design**: Mobile-first approach with progressive web app capabilities
+- **Enterprise Security**: JWT authentication, OTP verification, and comprehensive authorization
+- **Payment Integration**: Saudi-specific payment gateways (Tap, HyperPay, MADA)
+- **Business Intelligence**: Real-time analytics and reporting for sellers
 
 ##  Features
 
