@@ -20,7 +20,7 @@ const tapChargeSchema = z.object({
   redirect: z.object({
     url: z.string().url(),
   }),
-  metadata: z.record(z.string()).optional(),
+  metadata: z.record(z.string(), z.string()).optional(),
 });
 
 const tapRefundSchema = z.object({

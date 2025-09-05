@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -94,6 +95,18 @@ interface SellerInfo {
   rating: number;
 }
 
+interface UserInfo {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  avatar?: string;
+  status: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+}
+
 interface QuickStats {
   todayRevenue: number;
   todayOrders: number;
@@ -137,6 +150,7 @@ export default function SellerAdminLayout({
   const pathname = usePathname();
   const router = useRouter();
   const isArabic = locale === 'ar';
+  const { user, seller, isLoading: authLoading, isLoggedIn } = useAuth();
   
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -145,7 +159,6 @@ export default function SellerAdminLayout({
   const [notifications, setNotifications] = useState(3);
   const [isMobile, setIsMobile] = useState(false);
   const [countsData, setCountsData] = useState<CountsData | null>(null);
-  const [sellerId, setSellerId] = useState<string | null>(null);
   
   const [sellerInfo] = useState<SellerInfo>({
     name: 'أحمد محمد',
@@ -162,38 +175,25 @@ export default function SellerAdminLayout({
     lowStockItems: 3,
   });
 
-  // Fetch seller information and counts
+  // Check authentication using useAuth hook
   useEffect(() => {
-    const fetchSellerData = async () => {
-      try {
-        // Get current user and seller info
-        const userResponse = await fetch('/api/auth/me');
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          if (userData.data.user.role === 'SELLER') {
-            // Get seller profile to get seller ID
-            const sellerResponse = await fetch('/api/sellers/me');
-            if (sellerResponse.ok) {
-              const sellerData = await sellerResponse.json();
-              setSellerId(sellerData.data.id);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching seller info:', error);
-      }
-    };
-
-    fetchSellerData();
-  }, []);
+    if (!authLoading && !isLoggedIn) {
+      router.push(`/${locale}/auth/login?redirect=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    if (!authLoading && isLoggedIn && user?.role !== 'ADMIN' && user?.role !== 'SELLER') {
+      router.push(`/${locale}/`);
+      return;
+    }
+  }, [authLoading, isLoggedIn, user, router, locale, pathname]);
 
   // Fetch counts data when seller ID is available
   useEffect(() => {
-    if (!sellerId) return;
+    if (!seller?.id || authLoading) return;
     
     const fetchCounts = async () => {
       try {
-        const response = await fetch(`/api/sellers/${sellerId}/counts`);
+        const response = await fetch(`/api/sellers/${seller.id}/counts`);
         if (response.ok) {
           const counts = await response.json();
           setCountsData(counts.data);
@@ -208,7 +208,7 @@ export default function SellerAdminLayout({
     // Refresh counts every 30 seconds
     const interval = setInterval(fetchCounts, 30000);
     return () => clearInterval(interval);
-  }, [sellerId]);
+  }, [seller?.id, authLoading]);
 
   // Generate navigation items with dynamic badges
   const getNavigationItems = (): NavItem[] => [
@@ -288,7 +288,7 @@ export default function SellerAdminLayout({
       labelEn: 'Customer Management',
       icon: Users,
       href: '/seller/customers',
-      badge: countsData?.activity.newCustomers || 0,
+      badge: (countsData as any)?.activity?.newCustomers || 0,
       subItems: [
         { labelAr: 'جميع العملاء', labelEn: 'All Customers', href: '/seller/customers' },
         { labelAr: 'عملاء VIP', labelEn: 'VIP Customers', href: '/seller/customers/vip' },
@@ -435,6 +435,30 @@ export default function SellerAdminLayout({
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push(`/${locale}/`);
+    } catch (error) {
+      console.error('Error logging out:', error);
+      router.push(`/${locale}/`);
+    }
+  };
+
+  // Show loading spinner while checking auth
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-saudi-green"></div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated or not admin/seller
+  if (!authLoading && (!isLoggedIn || (user?.role !== 'ADMIN' && user?.role !== 'SELLER'))) {
+    return null;
+  }
   
   const SidebarContent = () => (
     <>
@@ -444,19 +468,34 @@ export default function SellerAdminLayout({
           <div className="flex items-center gap-3">
             <div className="relative">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={sellerInfo.avatar} />
-                <AvatarFallback>{getInitials(sellerInfo.name)}</AvatarFallback>
+                <AvatarImage src={user?.avatar} />
+                <AvatarFallback>{user ? getInitials(user.name) : 'U'}</AvatarFallback>
               </Avatar>
-              {sellerInfo.verified && (
+              {user?.emailVerified && (
                 <CheckCircle className="absolute -bottom-1 -right-1 h-4 w-4 text-green-500 bg-background rounded-full" />
               )}
             </div>
             {!collapsed && (
               <div className="flex-1">
-                <p className="text-sm font-semibold line-clamp-1">{sellerInfo.storeName}</p>
+                <p className="text-sm font-semibold line-clamp-1">
+                  {user?.role === 'ADMIN' 
+                    ? (isArabic ? 'مدير النظام' : 'System Admin') 
+                    : (seller?.businessName || sellerInfo.storeName)
+                  }
+                </p>
                 <div className="flex items-center gap-1">
-                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  <span className="text-xs text-muted-foreground">{sellerInfo.rating}</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {user?.role === 'ADMIN' 
+                      ? (isArabic ? 'مدير' : 'Admin') 
+                      : (isArabic ? 'بائع' : 'Seller')
+                    }
+                  </Badge>
+                  {user?.role === 'SELLER' && (
+                    <>
+                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      <span className="text-xs text-muted-foreground">{sellerInfo.rating}</span>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -605,10 +644,7 @@ export default function SellerAdminLayout({
             'w-full justify-start gap-2 text-destructive',
             collapsed && 'justify-center px-2'
           )}
-          onClick={() => {
-            // Handle logout
-            router.push(`/${locale}/`);
-          }}
+          onClick={handleLogout}
         >
           <LogOut className="h-4 w-4" />
           {!collapsed && (isArabic ? 'تسجيل الخروج' : 'Logout')}
@@ -803,18 +839,38 @@ export default function SellerAdminLayout({
             {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="relative">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={sellerInfo.avatar} />
-                    <AvatarFallback>{getInitials(sellerInfo.name)}</AvatarFallback>
+                    <AvatarImage src={user?.avatar} />
+                    <AvatarFallback>{user ? getInitials(user.name) : 'U'}</AvatarFallback>
                   </Avatar>
+                  {user?.emailVerified && (
+                    <CheckCircle className="absolute -top-1 -right-1 h-3 w-3 text-green-500 bg-background rounded-full" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuLabel>
-                  <div>
-                    <p className="font-medium">{sellerInfo.name}</p>
-                    <p className="text-xs text-muted-foreground">{sellerInfo.email}</p>
+                  <div className="space-y-1">
+                    <p className="font-medium">{user?.name || 'User'}</p>
+                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge 
+                        variant={user?.role === 'ADMIN' ? 'default' : 'secondary'} 
+                        className="text-xs"
+                      >
+                        {user?.role === 'ADMIN' 
+                          ? (isArabic ? 'مدير النظام' : 'Admin') 
+                          : (isArabic ? 'بائع' : 'Seller')
+                        }
+                      </Badge>
+                      {user?.emailVerified && (
+                        <Badge variant="outline" className="text-xs text-green-600">
+                          <CheckCircle className="mr-1 h-3 w-3" />
+                          {isArabic ? 'موثق' : 'Verified'}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -831,7 +887,7 @@ export default function SellerAdminLayout({
                   {isArabic ? 'المساعدة' : 'Help'}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   {isArabic ? 'تسجيل الخروج' : 'Logout'}
                 </DropdownMenuItem>

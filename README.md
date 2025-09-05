@@ -1,56 +1,57 @@
-#  Cargo Parts - KSA Auto Parts Marketplace
+# 🚗 CargoParts - Saudi Arabia Auto Parts Marketplace
 
 <div align="center">
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.4.6-black.svg)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-6.14.0-2D3748.svg)](https://www.prisma.io/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC.svg)](https://tailwindcss.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-6.14.0-2D3748?logo=prisma)](https://www.prisma.io/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-**A bilingual (Arabic/English), RTL-first marketplace for finding and ordering used OEM auto parts from KSA scrapyards**
+**🌍 A production-ready, bilingual e-commerce marketplace for automotive parts in Saudi Arabia**
 
-[Demo](#demo) • [Features](#features) • [Installation](#installation) • [Documentation](#documentation) • [Contributing](#contributing)
+[🚀 Quick Start](#quick-start) • [✨ Features](#features) • [📖 Documentation](#api-documentation) • [🏗 Architecture](#architecture) • [🤝 Contributing](#contributing)
 
 </div>
 
-##  Overview
+## 🌟 Overview
 
-Cargo Parts is a modern, production-ready marketplace platform specifically designed for the Saudi Arabian auto parts market. Built with Next.js 15 and TypeScript, it offers a comprehensive solution for connecting scrapyards, dealers, and customers in a seamless, bilingual experience.
+CargoParts is a modern, production-ready marketplace platform specifically designed for the Saudi Arabian auto parts market. Built with Next.js 15 and TypeScript, it offers a comprehensive solution for connecting scrapyards, dealers, and customers in a seamless, bilingual experience.
 
-###  Key Highlights
+### 🎯 Key Highlights
 
-- **Bilingual Support**: Arabic-first design with RTL support and English fallback
-- **Smart Search**: Advanced search with vehicle compatibility matching (year overlap logic)
-- **Multi-Role System**: Buyers, Sellers, Admins with comprehensive role-based access control
-- **Responsive Design**: Mobile-first approach with progressive web app capabilities
-- **Enterprise Security**: JWT authentication, OTP verification, and comprehensive authorization
-- **Payment Integration**: Saudi-specific payment gateways (Tap, HyperPay, MADA)
-- **Business Intelligence**: Real-time analytics and reporting for sellers
+- **🌍 Bilingual Support**: Arabic-first design with RTL support and English fallback
+- **🔍 Smart Search**: Advanced search with vehicle compatibility matching (year overlap logic)
+- **👥 Multi-Role System**: Buyers, Sellers, Admins with comprehensive role-based access control
+- **📱 Responsive Design**: Mobile-first approach with progressive web app capabilities
+- **🔐 Enterprise Security**: JWT authentication, OTP verification, and comprehensive authorization
+- **💰 Payment Integration**: Saudi-specific payment gateways (Tap, HyperPay, MADA)
+- **📊 Business Intelligence**: Real-time analytics and reporting for sellers
 
-##  Features
+## ✨ Features
 
-###  For Buyers
+### 🛒 For Buyers
 - **Vehicle-Specific Search**: Search by make, model, year, VIN decode
 - **Advanced Filtering**: Filter by condition, price, location, seller rating
 - **Real-time Inventory**: Live stock updates and availability
 - **Secure Checkout**: Multi-payment options with SAR currency support
 - **Order Tracking**: Complete order lifecycle management
 
-###  For Sellers
+### 🏪 For Sellers
 - **Inventory Management**: Comprehensive listing management with photo uploads
 - **Analytics Dashboard**: Revenue tracking, performance metrics, growth analytics
 - **Order Management**: Complete order processing workflow
 - **Customer Communication**: Built-in messaging system
 - **Verification System**: Business verification for trusted seller status
 
-###  For Administrators
+### 🔧 For Administrators
 - **User Management**: Complete user and seller administration
 - **Content Moderation**: Listing approval and review system
 - **Analytics**: Platform-wide metrics and business intelligence
 - **Configuration**: Dynamic business rules and content management
 
-##  Tech Stack
+## 🚀 Tech Stack
 
 ### Frontend
 - **Framework**: Next.js 15.4.6 with App Router
@@ -75,7 +76,7 @@ Cargo Parts is a modern, production-ready marketplace platform specifically desi
 - **CDN**: Vercel Edge Network or CloudFlare
 - **Monitoring**: Built-in analytics and error tracking
 
-##  Installation
+## 📦 Installation
 
 ### Prerequisites
 - Node.js 20+ 

@@ -27,7 +27,7 @@ import {
   Eye,
   Sparkles,
   CheckCircle,
-  Zap  // Used in component
+  Zap,  // Used in component
   ChevronLeft,
   ChevronRight,
   X
@@ -36,7 +36,7 @@ import { ImagePlaceholder } from '@/components/ui/image-placeholder';
 
 interface Seller {
   id: string;
-  yardName: string;
+  businessName: string;
   rating?: number;
   totalReviews?: number;
   verified?: boolean;
@@ -319,7 +319,7 @@ export function QuickPreviewModal({
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-2xl sm:text-3xl font-bold text-saudi-green">
-                    {listing.priceSar.toLocaleString(isArabic ? 'ar-SA' : 'en-US')}
+                    {(listing.priceSar / 100).toLocaleString(isArabic ? 'ar-SA' : 'en-US')}
                   </span>
                   <SARSymbol className="h-5 w-5 sm:h-6 sm:w-6 text-saudi-green/80" />
                 </div>
@@ -373,7 +373,7 @@ export function QuickPreviewModal({
                 <h4 className="font-semibold mb-3 text-sm sm:text-base">{isArabic ? 'معلومات البائع' : 'Seller Information'}</h4>
                 <div className="bg-muted/30 p-3 sm:p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="font-medium text-sm sm:text-base truncate">{seller.yardName}</span>
+                    <span className="font-medium text-sm sm:text-base truncate">{seller.businessName}</span>
                     {seller.verified && (
                       <CheckCircle className="h-4 w-4 text-saudi-green flex-shrink-0" />
                     )}

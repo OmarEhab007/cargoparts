@@ -7,8 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { SARSymbol } from '@/components/ui/currency-symbol';
-import { QuickAddToCart } from '@/components/features/quick-add-to-cart';
 import { cn } from '@/lib/utils';
 import { 
   Search, 
@@ -16,42 +14,21 @@ import {
   Truck, 
   Users,
   MapPin,
-  Star,
   CheckCircle2,
   TrendingUp,
   DollarSign,
   Sparkles,
-  Zap
+  Zap,
+  Star
 } from 'lucide-react';
 
-interface FeaturedListing {
-  id: string;
-  titleAr: string;
-  titleEn: string | null;
-  priceSar: number;
-  make: string;
-  model: string;
-  fromYear: number;
-  toYear: number;
-  condition: string;
-  city: string;
-  seller: {
-    id: string;
-    yardName: string;
-  };
-  photos: { url: string }[];
-}
+interface LandingClientProps {}
 
-interface LandingClientProps {
-  initialListings: FeaturedListing[];
-}
-
-export default function LandingClient({ initialListings }: LandingClientProps) {
+export default function LandingClient({}: LandingClientProps) {
   const router = useRouter();
   const locale = useLocale();
   const isArabic = locale === 'ar';
   const [searchQuery, setSearchQuery] = useState('');
-  const featuredListings = initialListings;
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,39 +95,136 @@ export default function LandingClient({ initialListings }: LandingClientProps) {
             </div>
             
             {/* Enhanced Search Bar */}
-            <form onSubmit={handleSearch} className="mx-auto max-w-2xl">
+            <form onSubmit={handleSearch} className="mx-auto max-w-4xl">
               <div className="relative">
-                <div className="flex gap-2 p-2 bg-white/90 backdrop-blur-sm rounded-2xl border-2 border-transparent focus-within:border-saudi-green/50 shadow-lg">
-                  <div className="relative flex-1">
-                    <Search className="absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-saudi-green" />
-                    <Input
-                      type="search"
-                      placeholder={isArabic 
-                        ? 'ابحث عن أي قطعة... كامري، محرك، فرامل، مرآة'
-                        : 'Search any part... Camry, engine, brakes, mirror'}
-                      className={`ps-12 h-14 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/70 ${isArabic ? 'text-lg font-medium' : 'text-lg'}`}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+                {/* Main search container with premium styling */}
+                <div className="relative bg-white/95 backdrop-blur-lg p-6 rounded-3xl border-2 border-saudi-green/20 focus-within:border-saudi-green/40 shadow-2xl hover:shadow-3xl transition-all duration-500">
+                  {/* Gradient overlay for premium look */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-saudi-green/5 via-transparent to-desert-gold/5 rounded-3xl pointer-events-none"></div>
+                  
+                  <div className="relative flex gap-4 items-center">
+                    <div className="relative flex-1">
+                      <div className="absolute start-6 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                        <div className="w-10 h-10 bg-saudi-green/10 rounded-full flex items-center justify-center">
+                          <Search className="h-5 w-5 text-saudi-green" />
+                        </div>
+                        <div className="h-8 w-px bg-saudi-green/20"></div>
+                      </div>
+                      <Input
+                        type="search"
+                        placeholder={isArabic 
+                          ? 'ابحث عن أي قطعة غيار... كامري، محرك، فرامل، مرآة جانبية'
+                          : 'Search for any part... Camry, engine, brakes, side mirror'}
+                        className={cn(
+                          "ps-20 pe-6 h-18 text-xl bg-white/90 border-2 border-saudi-green/15 rounded-2xl",
+                          "focus-visible:ring-4 focus-visible:ring-saudi-green/20 focus-visible:ring-offset-0",
+                          "focus-visible:border-saudi-green/40 focus-visible:bg-white",
+                          "placeholder:text-muted-foreground/70",
+                          "font-semibold shadow-inner transition-all duration-300",
+                          "hover:border-saudi-green/25 hover:bg-white",
+                          isArabic && "text-xl font-bold"
+                        )}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                      {/* Enhanced search indicator */}
+                      {searchQuery && (
+                        <div className="absolute end-6 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                          <div className="w-3 h-3 bg-saudi-green rounded-full animate-pulse"></div>
+                          <span className="text-xs font-medium text-saudi-green animate-pulse">
+                            {isArabic ? 'جاري البحث...' : 'Searching...'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <Button 
+                      size="lg" 
+                      type="submit" 
+                      className={cn(
+                        "h-18 px-10 rounded-2xl font-bold text-xl shadow-xl",
+                        "bg-saudi-green hover:bg-saudi-green-dark",
+                        "text-white border-2 border-saudi-green-dark",
+                        "hover:shadow-2xl hover:scale-105 hover:-translate-y-1",
+                        "hover:border-saudi-green hover:bg-saudi-green-light",
+                        "focus:ring-4 focus:ring-saudi-green/30 focus:ring-offset-2",
+                        "transition-all duration-300",
+                        "active:scale-95 active:translate-y-0",
+                        "font-black tracking-wide"
+                      )}
+                    >
+                      <Search className="me-3 h-6 w-6" />
+                      {isArabic ? 'ابحث الآن' : 'Search Now'}
+                    </Button>
                   </div>
-                  <Button size="lg" type="submit" className="btn-saudi h-12 px-8 rounded-xl">
-                    <Search className="me-2 h-4 w-4" />
-                    {isArabic ? 'بحث' : 'Search'}
-                  </Button>
                 </div>
-                <div className="flex flex-col items-center gap-2 mt-4">
-                  <p className={`text-muted-foreground ${isArabic ? 'text-base font-medium' : 'text-sm'}`}>
-                    {isArabic 
-                      ? '🔥 أكثر من 50,000 قطعة متاحة الآن'
-                      : '🔥 Over 50,000 parts available now'}
-                  </p>
-                  <div className={`flex items-center gap-4 text-desert-gold font-medium ${isArabic ? 'text-sm gap-3' : 'text-xs'}`}>
-                    <span className={`flex items-center ${isArabic ? 'gap-2' : 'gap-1'}`}>
-                      <div className="w-2 h-2 bg-desert-gold rounded-full animate-pulse"></div>
-                      {isArabic ? '243 مشتري يتصفحون الآن' : '243 buyers browsing now'}
+                
+                {/* Enhanced stats and social proof */}
+                <div className="mt-6 text-center space-y-3">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="flex -space-x-2">
+                      <div className="w-8 h-8 bg-saudi-green rounded-full border-2 border-white flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">5</span>
+                      </div>
+                      <div className="w-8 h-8 bg-desert-gold rounded-full border-2 border-white flex items-center justify-center">
+                        <span className="text-saudi-green text-xs font-bold">★</span>
+                      </div>
+                      <div className="w-8 h-8 bg-riyadh-sky rounded-full border-2 border-white flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">✓</span>
+                      </div>
+                    </div>
+                    <p className={cn(
+                      "text-muted-foreground font-medium",
+                      isArabic ? "text-base" : "text-sm"
+                    )}>
+                      {isArabic 
+                        ? '🔥 أكثر من 50,000 قطعة أصلية متاحة الآن'
+                        : '🔥 Over 50,000 genuine parts available now'}
+                    </p>
+                  </div>
+                  
+                  <div className={cn(
+                    "flex items-center justify-center gap-6 text-desert-gold font-semibold",
+                    isArabic ? "text-sm gap-4" : "text-xs gap-6"
+                  )}>
+                    <span className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-saudi-green rounded-full animate-pulse"></div>
+                      {isArabic ? '243 مشتري نشط الآن' : '243 active buyers now'}
                     </span>
-                    <span>•</span>
-                    <span>{isArabic ? '18 طلب تم في آخر ساعة' : '18 orders in last hour'}</span>
+                    <span className="text-muted-foreground">•</span>
+                    <span className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-desert-gold rounded-full animate-bounce"></div>
+                      {isArabic ? '18 طلب في آخر ساعة' : '18 orders last hour'}
+                    </span>
+                  </div>
+                  
+                  {/* Popular searches */}
+                  <div className="mt-4">
+                    <p className={cn(
+                      "text-muted-foreground mb-2",
+                      isArabic ? "text-sm" : "text-xs"
+                    )}>
+                      {isArabic ? 'البحث الشائع:' : 'Popular searches:'}
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {(isArabic 
+                        ? ['كامري', 'محرك', 'فرامل', 'مرآة', 'إطارات']
+                        : ['Camry', 'Engine', 'Brakes', 'Mirror', 'Tires']
+                      ).map((term, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setSearchQuery(term)}
+                          className={cn(
+                            "px-3 py-1.5 bg-saudi-green/10 hover:bg-saudi-green/20",
+                            "text-saudi-green hover:text-saudi-green-dark",
+                            "rounded-full text-xs font-medium",
+                            "transition-colors duration-200 cursor-pointer"
+                          )}
+                        >
+                          {term}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -159,113 +233,109 @@ export default function LandingClient({ initialListings }: LandingClientProps) {
         </div>
       </section>
 
-      {/* Featured Listings Section */}
-      <section className="py-16 lg:py-24">
+
+      {/* How It Works Section */}
+      <section className="py-16 lg:py-24 bg-gradient-to-br from-muted/30 via-background to-saudi-green/5">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-saudi-green mb-4">
-              {isArabic ? 'قطع غيار مميزة' : 'Featured Parts'}
+              {isArabic ? 'كيف تعمل المنصة؟' : 'How It Works?'}
             </h2>
-            <p className="text-lg text-muted-foreground">
-              {isArabic ? 'أحدث القطع المضافة من البائعين الموثوقين' : 'Latest parts from trusted sellers'}
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              {isArabic 
+                ? 'في ثلاث خطوات بسيطة، ابحث عن قطع الغيار التي تحتاجها واشتريها بأمان من بائعين موثوقين'
+                : 'In three simple steps, find the spare parts you need and buy them safely from trusted sellers'
+              }
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredListings.slice(0, 6).map((listing, index) => (
-              <Card key={listing.id} className={cn(
-                // Enhanced featured listing card styling
-                "group cursor-pointer",
-                // Premium gradient background for featured items
-                "bg-gradient-to-br from-card via-card to-saudi-green/3",
-                // Enhanced shadows with Saudi green tint
-                "shadow-lg hover:shadow-xl hover:shadow-saudi-green/20",
-                // Better hover effects with lift and scale
-                "hover:-translate-y-2 hover:scale-[1.02]",
-                // Enhanced border with gradient
-                "border-2 border-transparent hover:border-saudi-green/20",
-                "bg-clip-padding",
-                // Staggered animation delay for visual appeal
-                "transition-all duration-500 ease-out",
-                // Add subtle backdrop blur
-                "backdrop-blur-sm",
-                // Special styling for first featured item
-                index === 0 && "ring-2 ring-desert-gold/20 bg-gradient-to-br from-card via-desert-gold/5 to-saudi-green/3"
-              )}>
-                {/* Add decorative accent for featured items */}
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-saudi-green/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                
-                <CardHeader className="relative z-10">
-                  <CardTitle className={cn(
-                    "text-lg leading-tight line-clamp-2",
-                    // Enhanced title styling
-                    "group-hover:text-saudi-green transition-colors duration-300",
-                    "font-semibold tracking-tight"
-                  )}>
-                    {isArabic ? listing.titleAr : (listing.titleEn || listing.titleAr)}
-                  </CardTitle>
-                  {/* Add featured badge for first item */}
-                  {index === 0 && (
-                    <div className={cn(
-                      "absolute -top-3 z-20",
-                      isArabic ? "-left-3" : "-right-3"
-                    )}>
-                      <div className="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-900 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg border border-amber-300">
-                        <Star className="inline h-3 w-3 me-1 fill-current" />
-                        {isArabic ? 'مميز' : 'Featured'}
-                      </div>
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent className="relative z-10 space-y-0">
-                  <div className="space-y-4">
-                    {/* Enhanced price display */}
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-saudi-green group-hover:scale-105 transition-transform duration-200">
-                          <SARSymbol className="inline h-6 w-6 me-1" /> 
-                          {listing.priceSar.toLocaleString()}
-                        </span>
-                        {/* Add savings badge if it's a good deal */}
-                        {listing.priceSar < 5000 && (
-                          <Badge className="bg-green-100 text-green-800 text-xs">
-                            {isArabic ? 'سعر ممتاز' : 'Great Price'}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Enhanced vehicle info */}
-                    <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-foreground">
-                          {listing.make} {listing.model}
-                        </span>
-                        <span className="text-sm bg-saudi-green/10 text-saudi-green px-2 py-1 rounded-full font-medium">
-                          {listing.fromYear}-{listing.toYear}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4 text-saudi-green" />
-                        <span>{listing.city}</span>
-                        {/* Add seller info */}
-                        <span className="ms-auto flex items-center gap-1">
-                          <Shield className="h-3 w-3 text-desert-gold" />
-                          <span className="text-xs">{listing.seller.yardName}</span>
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Enhanced CTA */}
-                    <div className="pt-2">
-                      <QuickAddToCart 
-                        listing={listing} 
-                        className="w-full group-hover:bg-saudi-green-dark group-hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+            {/* Step 1: Search */}
+            <div className="text-center group flex flex-col">
+              <div className="relative mb-8">
+                <div className="w-24 h-24 bg-saudi-green text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  1
+                </div>
+                <div className="absolute top-1/2 -translate-y-1/2 left-full w-8 h-0.5 bg-saudi-green/30 hidden md:block">
+                  <div className="absolute top-1/2 -translate-y-1/2 right-0 w-0 h-0 border-l-4 border-l-saudi-green/30 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+                </div>
+              </div>
+              <div className="bg-background/80 backdrop-blur-sm p-6 rounded-lg border border-saudi-green/10 shadow-lg group-hover:shadow-xl transition-all duration-300 flex-1 flex flex-col">
+                <div className="w-16 h-16 bg-saudi-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="h-8 w-8 text-saudi-green" />
+                </div>
+                <h3 className="text-xl font-bold mb-3 text-saudi-green">
+                  {isArabic ? 'ابحث عن قطعتك' : 'Search Your Part'}
+                </h3>
+                <p className="text-muted-foreground leading-relaxed flex-1">
+                  {isArabic 
+                    ? 'ادخل تفاصيل سيارتك أو رقم القطعة للعثور على ما تحتاجه'
+                    : 'Enter your car details or part number to find what you need from thousands of available parts'
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* Step 2: Compare */}
+            <div className="text-center group flex flex-col">
+              <div className="relative mb-8">
+                <div className="w-24 h-24 bg-desert-gold text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  2
+                </div>
+                <div className="absolute top-1/2 -translate-y-1/2 left-full w-8 h-0.5 bg-desert-gold/30 hidden md:block">
+                  <div className="absolute top-1/2 -translate-y-1/2 right-0 w-0 h-0 border-l-4 border-l-desert-gold/30 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+                </div>
+              </div>
+              <div className="bg-background/80 backdrop-blur-sm p-6 rounded-lg border border-desert-gold/10 shadow-lg group-hover:shadow-xl transition-all duration-300 flex-1 flex flex-col">
+                <div className="w-16 h-16 bg-desert-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <TrendingUp className="h-8 w-8 text-desert-gold" />
+                </div>
+                <h3 className="text-xl font-bold mb-3 text-desert-gold">
+                  {isArabic ? 'قارن واختر' : 'Compare & Choose'}
+                </h3>
+                <p className="text-muted-foreground leading-relaxed flex-1">
+                  {isArabic 
+                    ? 'قارن الأسعار والجودة والتقييمات من عدة بائعين واختر الأفضل'
+                    : 'Compare prices, quality, and ratings from multiple sellers and choose the best for you'
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* Step 3: Purchase */}
+            <div className="text-center group flex flex-col">
+              <div className="relative mb-8">
+                <div className="w-24 h-24 bg-riyadh-sky text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold shadow-xl group-hover:scale-110 transition-transform duration-300">
+                  3
+                </div>
+              </div>
+              <div className="bg-background/80 backdrop-blur-sm p-6 rounded-lg border border-riyadh-sky/10 shadow-lg group-hover:shadow-xl transition-all duration-300 flex-1 flex flex-col">
+                <div className="w-16 h-16 bg-riyadh-sky/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="h-8 w-8 text-riyadh-sky" />
+                </div>
+                <h3 className="text-xl font-bold mb-3 text-riyadh-sky">
+                  {isArabic ? 'اشتري بأمان' : 'Buy Securely'}
+                </h3>
+                <p className="text-muted-foreground leading-relaxed flex-1">
+                  {isArabic 
+                    ? 'ادفع بأمان واستلم قطعتك مع ضمان الجودة وحماية المشتري'
+                    : 'Pay securely and receive your part with quality guarantee and complete buyer protection'
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Call to Action */}
+          <div className="text-center mt-12">
+            <Button
+              size="lg"
+              className="btn-saudi-enhanced px-8 py-4 text-lg font-semibold"
+              onClick={() => router.push(`/${locale}/shop`)}
+            >
+              <Search className="me-2 h-5 w-5" />
+              {isArabic ? 'ابدأ البحث الآن' : 'Start Searching Now'}
+            </Button>
           </div>
         </div>
       </section>
@@ -414,30 +484,21 @@ export default function LandingClient({ initialListings }: LandingClientProps) {
                   : 'Join over 15,000 customers who trust us for their auto parts needs'}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button
-                  type="button"
-                  className={`
-                    inline-flex items-center justify-center gap-2 
-                    px-6 py-3 lg:px-8 lg:py-4
-                    text-lg font-semibold
-                    rounded-lg shadow-lg
-                    transition-all duration-200 ease-in-out
-                    transform hover:scale-105 active:scale-95
-                    ${isArabic ? 'font-bold' : 'font-semibold'}
-                  `}
-                  style={{
-                    backgroundColor: '#ffffff',
-                    color: '#165d31',
-                    border: 'none'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f8f9fa';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-                  }}
+                <Button
+                  size="lg"
+                  className={cn(
+                    "inline-flex items-center justify-center gap-3",
+                    "px-8 py-4 lg:px-10 lg:py-5",
+                    "text-lg font-bold h-auto",
+                    "rounded-xl shadow-xl",
+                    "bg-white text-saudi-green border-2 border-white/20",
+                    "hover:bg-white/95 hover:text-saudi-green-dark",
+                    "hover:shadow-2xl hover:scale-105 hover:-translate-y-1",
+                    "active:scale-95 active:translate-y-0",
+                    "transition-all duration-300",
+                    "backdrop-blur-sm",
+                    isArabic ? 'font-black text-xl' : 'font-bold'
+                  )}
                   onClick={() => {
                     // Navigate to search or trigger search
                     const searchInput = document.querySelector('input[type="search"]') as HTMLInputElement;
@@ -447,44 +508,32 @@ export default function LandingClient({ initialListings }: LandingClientProps) {
                     }
                   }}
                 >
-                  <Search className="h-5 w-5" />
+                  <Search className="h-6 w-6" />
                   {isArabic ? 'ابحث عن قطع الغيار' : 'Search Parts'}
-                </button>
+                </Button>
                 
-                <button
-                  type="button"
-                  className={`
-                    inline-flex items-center justify-center gap-2 
-                    px-6 py-3 lg:px-8 lg:py-4
-                    text-lg font-semibold
-                    rounded-lg
-                    transition-all duration-200 ease-in-out
-                    transform hover:scale-105 active:scale-95
-                    ${isArabic ? 'font-bold' : 'font-semibold'}
-                  `}
-                  style={{
-                    backgroundColor: 'transparent',
-                    color: '#ffffff',
-                    border: '2px solid #ffffff'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                    e.currentTarget.style.color = '#165d31';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = '#ffffff';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
+                <Button
+                  size="lg"
+                  className={cn(
+                    "inline-flex items-center justify-center gap-3",
+                    "px-8 py-4 lg:px-10 lg:py-5",
+                    "text-lg font-bold h-auto",
+                    "rounded-xl shadow-xl",
+                    "bg-transparent text-white border-2 border-white",
+                    "hover:shadow-2xl hover:scale-105 hover:-translate-y-1",
+                    "active:scale-95 active:translate-y-0",
+                    "transition-all duration-300",
+                    "backdrop-blur-sm",
+                    isArabic ? 'font-black text-xl' : 'font-bold'
+                  )}
                   onClick={() => {
-                    // Navigate to seller registration
-                    router.push(`/${locale}/seller/register`);
+                    // Navigate to seller registration via auth page
+                    router.push(`/${locale}/auth?mode=register&role=seller`);
                   }}
                 >
-                  <Users className="h-5 w-5" />
+                  <Users className="h-6 w-6" />
                   {isArabic ? 'سجل كبائع' : 'Register as Seller'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

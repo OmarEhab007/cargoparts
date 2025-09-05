@@ -70,10 +70,33 @@ const orderStatuses = [
   { value: 'CANCELLED', labelEn: 'Cancelled', labelAr: 'ملغى', color: 'destructive' },
 ];
 
-import EnhancedOrdersPage from './enhanced-page';
+import { Suspense } from 'react';
+import { EnhancedOrderManagement } from '@/components/features/enhanced-order-management';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SellerOrdersPage() {
-  return <EnhancedOrdersPage />;
+  return (
+    <div className="p-6">
+      <Suspense
+        fallback={
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+            <div className="grid grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-24" />
+              ))}
+            </div>
+            <Skeleton className="h-[600px] w-full" />
+          </div>
+        }
+      >
+        <EnhancedOrderManagement />
+      </Suspense>
+    </div>
+  );
 }
 
 // Keep old component for reference

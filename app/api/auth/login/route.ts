@@ -1,129 +1,90 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserService } from '@/lib/auth/user-service';
-import { z } from 'zod';
-import { checkRateLimit, getClientIp, getUserAgent, createAuthResponse } from '@/lib/auth/middleware';
+import { emailService } from '@/lib/communication/email-service';
+import { loginSchema } from '@/lib/auth/validation';
+import { AuthErrors, createErrorResponse, handleUnknownError } from '@/lib/auth/errors';
+import { withRateLimit, loginRateLimiter } from '@/lib/auth/rate-limiter';
 
-const loginInitSchema = z.object({
-  email: z.string().email('Invalid email format'),
-});
-
-const loginCompleteSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  otpCode: z.string().length(6, 'OTP must be 6 digits'),
-});
-
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    // Rate limiting for login attempts
-    const clientIp = getClientIp(request);
-    const rateLimit = checkRateLimit(clientIp, 10, 60000); // 10 requests per minute
-    
-    if (rateLimit.isLimited) {
-      return NextResponse.json(
-        {
-          error: 'Too many login attempts',
-          details: {
-            retryAfter: Math.ceil((rateLimit.resetTime - Date.now()) / 1000),
-          },
-        },
-        { status: 429 }
-      );
+    // Apply rate limiting
+    const rateLimitResponse = await withRateLimit(loginRateLimiter)(req);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
-    const body = await request.json();
-    const { otpCode } = body;
+    // Parse and validate request body
+    const body = await req.json();
+    const validatedData = loginSchema.parse(body);
 
-    // Determine if this is login initiation or OTP verification
-    if (!otpCode) {
-      // Login initiation - send OTP
-      const data = loginInitSchema.parse(body);
-      
-      const result = await UserService.initiateLogin({
-        email: data.email,
-        useOtp: true,
-      });
+    // Extract user agent and IP for session tracking
+    const userAgent = req.headers.get('user-agent');
+    const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip');
 
-      return NextResponse.json({
-        message: result.message,
-        requiresOtp: result.requiresOtp,
-        userId: result.userId,
-      });
-    } else {
-      // OTP verification - complete login
-      const data = loginCompleteSchema.parse(body);
-      const userAgent = getUserAgent(request);
-      
-      const result = await UserService.completeOtpLogin(
-        {
-          email: data.email,
-          otpCode: data.otpCode,
-        },
-        userAgent,
-        clientIp
-      );
+    // Initiate login process (this will send OTP email)
+    const result = await UserService.initiateLogin({
+      email: validatedData.email,
+      useOtp: true,
+    });
 
-      // Create response with auth tokens
-      return createAuthResponse(
-        {
-          message: 'Login successful',
-          user: {
-            id: result.user.id,
-            email: result.user.email,
-            name: result.user.name,
-            phone: result.user.phone,
-            role: result.user.role,
-            status: result.user.status,
-            avatar: result.user.avatar,
-            emailVerified: result.user.emailVerified,
-            phoneVerified: result.user.phoneVerified,
-            preferredLocale: result.user.preferredLocale,
-          },
-          sessionId: result.sessionId,
-        },
-        {
-          token: result.token,
-          refreshToken: result.refreshToken,
+    // If user exists, send OTP email
+    if (result.userId) {
+      try {
+        const user = await UserService.getUserById(result.userId);
+        if (user) {
+          // Get the generated OTP code
+          const { OtpService } = await import('@/lib/auth/otp');
+          const otpStatus = await OtpService.getOtpStatus(user.id, 'LOGIN');
+          
+          if (otpStatus.hasActiveOtp) {
+            // Find the actual OTP code from the database
+            const { prisma } = await import('@/lib/db/prisma');
+            const otpRecord = await prisma.otpCode.findFirst({
+              where: {
+                userId: user.id,
+                type: 'LOGIN',
+                verified: false,
+                expiresAt: { gte: new Date() },
+              },
+              orderBy: { createdAt: 'desc' },
+            });
+            
+            if (otpRecord) {
+              // In development mode, log the OTP to console
+              if (process.env.NODE_ENV === 'development') {
+                console.log('🔑 LOGIN OTP for', user.email, ':', otpRecord.code);
+              }
+              await emailService.sendLoginOtp(user.email, otpRecord.code, (user.preferredLocale as 'ar' | 'en') || 'ar');
+            }
+          }
         }
-      );
-    }
-  } catch (error) {
-    console.error('Login error:', error);
-
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          error: 'Invalid input data',
-          details: error.issues.map(issue => ({
-            field: issue.path.join('.'),
-            message: issue.message,
-          })),
-        },
-        { status: 400 }
-      );
-    }
-
-    if (error instanceof Error) {
-      // Handle known errors
-      const errorMessages = [
-        'Account has been banned',
-        'Account is inactive',
-        'Invalid email or OTP',
-        'Invalid OTP',
-        'Too many OTP requests',
-        'Maximum attempts exceeded',
-      ];
-
-      if (errorMessages.some(msg => error.message.includes(msg))) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 401 }
-        );
+      } catch (emailError) {
+        console.error('Failed to send login OTP email:', emailError);
+        throw AuthErrors.EMAIL_SEND_FAILED();
       }
     }
 
-    return NextResponse.json(
-      { error: 'Login failed. Please try again.' },
-      { status: 500 }
-    );
+    // Always return the same message for security (don't reveal if email exists)
+    return NextResponse.json({
+      success: true,
+      requiresOtp: true,
+      message: result.message,
+      messageAr: 'إذا كان البريد الإلكتروني موجوداً، فقد تم إرسال رمز التحقق',
+    });
+
+  } catch (error) {
+    const authError = handleUnknownError(error);
+    return createErrorResponse(authError);
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }

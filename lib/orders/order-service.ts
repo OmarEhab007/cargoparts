@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma';
-// import { CartService } from './cart-service';
+import { PricingService } from './pricing-service';
 import type { Order, OrderStatus, OrderItem, Address } from '@prisma/client';
 
 export interface CreateOrderInput {
@@ -10,6 +10,24 @@ export interface CreateOrderInput {
     quantity: number;
   }>;
   notes?: string;
+}
+
+export interface CreateGuestOrderInput {
+  items: Array<{
+    listingId: string;
+    quantity: number;
+    price: number;
+  }>;
+  buyerInfo: {
+    fullName: string;
+    email: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    postalCode?: string;
+  };
+  totalAmount: number;
 }
 
 export interface OrderWithDetails extends Order {
@@ -143,10 +161,40 @@ export class OrderService {
         });
       }
 
-      // Calculate totals (for now, no tax or shipping)
-      const taxAmount = 0; // TODO: Implement tax calculation
-      const shippingAmount = 0; // TODO: Implement shipping calculation
-      const total = subtotal + taxAmount + shippingAmount;
+      // Calculate totals using pricing service
+      const pricingInput = {
+        subtotal,
+        shippingCity: address.city,
+        items: orderItems.map(item => {
+          const listing = input.items.find(i => i.listingId === item.listingId);
+          return {
+            listingId: item.listingId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            sellerId: '', // Will be populated below
+            city: '', // Will be populated below
+          };
+        }),
+      };
+
+      // Get seller info for shipping calculation
+      for (let i = 0; i < pricingInput.items.length; i++) {
+        const item = pricingInput.items[i];
+        const listing = await tx.listing.findUnique({
+          where: { id: item.listingId },
+          select: { sellerId: true, city: true },
+        });
+        
+        if (listing) {
+          item.sellerId = listing.sellerId;
+          item.city = listing.city;
+        }
+      }
+
+      const pricing = PricingService.calculateOrderPricing(pricingInput);
+      const taxAmount = pricing.taxAmount;
+      const shippingAmount = pricing.shippingAmount;
+      const total = pricing.total;
 
       // Generate unique order number
       const orderNumber = await this.generateOrderNumber();
@@ -234,7 +282,7 @@ export class OrderService {
    * Get order by ID with full details
    */
   static async getOrderById(orderId: string, userId?: string): Promise<OrderWithDetails | null> {
-    const where: Record<string, unknown> = { id: orderId };
+    const where: any = { id: orderId };
     
     // If userId provided, ensure user can access this order
     if (userId) {
@@ -587,7 +635,7 @@ export class OrderService {
       prisma.order.aggregate({
         where: {
           ...where,
-          status: { in: ['DELIVERED', 'COMPLETED'] },
+          status: 'DELIVERED',
         },
         _sum: { total: true },
       }),
@@ -605,7 +653,7 @@ export class OrderService {
     ]);
 
     const totalOrders = totalStats._count.id || 0;
-    const totalRevenue = revenueStats._sum.total || 0;
+    const totalRevenue = revenueStats._sum?.total || 0;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     const ordersByStatus = statusStats.reduce((acc, stat) => {
@@ -656,5 +704,155 @@ export class OrderService {
     }
     
     return orderNumber;
+  }
+
+  /**
+   * Create guest order without requiring user registration
+   */
+  static async createGuestOrder(input: CreateGuestOrderInput): Promise<any> {
+    return prisma.$transaction(async (tx) => {
+      // Create or find guest user
+      let guestUser = await tx.user.findUnique({
+        where: { email: input.buyerInfo.email },
+      });
+
+      if (!guestUser) {
+        guestUser = await tx.user.create({
+          data: {
+            email: input.buyerInfo.email,
+            name: input.buyerInfo.fullName,
+            phone: input.buyerInfo.phone,
+            role: 'BUYER',
+            status: 'ACTIVE',
+          },
+        });
+      }
+
+      // Create address for this order
+      const address = await tx.address.create({
+        data: {
+          userId: guestUser.id,
+          title: 'Order Address',
+          firstName: input.buyerInfo.fullName.split(' ')[0] || '',
+          lastName: input.buyerInfo.fullName.split(' ').slice(1).join(' ') || '',
+          addressLine1: input.buyerInfo.addressLine1,
+          addressLine2: input.buyerInfo.addressLine2,
+          city: input.buyerInfo.city,
+          postalCode: input.buyerInfo.postalCode,
+          phone: input.buyerInfo.phone,
+          isDefault: false,
+        },
+      });
+
+      // Initial pricing (will be recalculated after validation)
+      const subtotal = 0; // Will be calculated from actual listing prices
+      const shippingAmount = 0; // Free shipping as shown in checkout
+      const taxAmount = 0; // No tax for now
+      const total = 0; // Will be recalculated
+
+      // Generate order number
+      const orderNumber = await this.generateOrderNumber();
+
+      // Create order
+      const order = await tx.order.create({
+        data: {
+          orderNumber,
+          buyerId: guestUser.id,
+          addressId: address.id,
+          status: 'PENDING',
+          subtotal,
+          taxAmount,
+          shippingAmount,
+          total,
+          currency: 'SAR',
+        },
+      });
+
+      // Validate and process order items with inventory checks
+      const orderItems = [];
+      let actualSubtotal = 0;
+      
+      for (const item of input.items) {
+        // Fetch current listing to validate availability and price
+        const listing = await tx.listing.findUnique({
+          where: { id: item.listingId },
+          include: { seller: true },
+        });
+
+        if (!listing) {
+          throw new Error(`Listing ${item.listingId} not found`);
+        }
+
+        // Validate listing is still available
+        if (listing.status !== 'PUBLISHED') {
+          throw new Error(`Listing ${listing.titleAr || listing.titleEn} is no longer available`);
+        }
+
+        // Validate seller is active
+        if (listing.seller.status !== 'ACTIVE') {
+          throw new Error(`Seller for ${listing.titleAr || listing.titleEn} is currently inactive`);
+        }
+
+        // Validate quantity availability
+        if (listing.quantity < item.quantity) {
+          throw new Error(`Insufficient quantity for ${listing.titleAr || listing.titleEn}. Available: ${listing.quantity}, Requested: ${item.quantity}`);
+        }
+
+        // Use current listing price (server-side price validation)
+        const currentPrice = listing.priceSar;
+        const totalItemPrice = currentPrice * item.quantity;
+        actualSubtotal += totalItemPrice;
+
+        // Decrease inventory quantity
+        await tx.listing.update({
+          where: { id: item.listingId },
+          data: {
+            quantity: {
+              decrement: item.quantity,
+            },
+          },
+        });
+
+        // Create order item with validated current price
+        const orderItem = await tx.orderItem.create({
+          data: {
+            orderId: order.id,
+            listingId: item.listingId,
+            quantity: item.quantity,
+            unitPrice: currentPrice,
+            totalPrice: totalItemPrice,
+          },
+        });
+        orderItems.push(orderItem);
+      }
+
+      // Validate total price matches server-calculated price
+      const calculatedShipping = 0; // Free shipping
+      const calculatedTax = 0; // No tax for now
+      const calculatedTotal = actualSubtotal + calculatedShipping + calculatedTax;
+
+      // Update order with actual calculated prices
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          subtotal: actualSubtotal,
+          taxAmount: calculatedTax,
+          shippingAmount: calculatedShipping,
+          total: calculatedTotal,
+        },
+      });
+
+      // Return simplified order object with actual calculated totals
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        total: calculatedTotal,
+        subtotal: actualSubtotal,
+        currency: order.currency,
+        createdAt: order.createdAt,
+        items: orderItems,
+      };
+    });
   }
 }

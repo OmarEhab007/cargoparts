@@ -12,7 +12,7 @@ const analyticsQuerySchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { context, response } = await withAuth(request, { 
@@ -30,7 +30,8 @@ export async function GET(
       );
     }
 
-    const sellerId = params.id;
+    const resolvedParams = await params;
+    const sellerId = resolvedParams.id;
     const query = analyticsQuerySchema.parse({
       ...Object.fromEntries(request.nextUrl.searchParams.entries())
     });

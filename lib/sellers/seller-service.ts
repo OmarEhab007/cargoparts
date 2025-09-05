@@ -1,6 +1,145 @@
 import { prisma } from '@/lib/db/prisma';
-import type { Seller, SellerStatus, BusinessType, DocumentType, VerificationStatus, User } from '@prisma/client';
+import type { Seller, SellerStatus, BusinessType, DocumentType, VerificationStatus, User, Prisma } from '@prisma/client';
 import { z } from 'zod';
+import { cache } from 'react';
+
+export interface SellerDashboardData {
+  overview: {
+    totalViews: number;
+    totalInquiries: number;
+    totalOrders: number;
+    totalRevenue: number;
+    totalNewListings: number;
+    activeListings: number;
+    averageRating: number;
+    totalReviews: number;
+    totalSales: number;
+    isVerified: boolean;
+  };
+  growth: {
+    viewsGrowth: number;
+    inquiriesGrowth: number;
+    ordersGrowth: number;
+    revenueGrowth: number;
+  };
+  chartData: Array<{
+    date: string;
+    views: number;
+    inquiries: number;
+    orders: number;
+    revenue: number;
+  }>;
+  topListings: Array<{
+    id: string;
+    title: string;
+    titleEn?: string;
+    views: number;
+    price: number;
+    image: string | null;
+  }>;
+  recentOrders: Array<{
+    id: string;
+    orderNumber: string;
+    buyerName: string;
+    items: number;
+    total: number;
+    status: string;
+    createdAt: string;
+  }>;
+  period: {
+    startDate: string;
+    endDate: string;
+    period: string;
+  };
+}
+
+export interface SellerProfile {
+  id: string;
+  businessName: string;
+  businessNameEn: string | null;
+  businessType: string;
+  commercialLicense: string | null;
+  taxNumber: string | null;
+  city: string;
+  district: string | null;
+  region: string | null;
+  postalCode: string | null;
+  address: string;
+  phone: string | null;
+  whatsapp: string | null;
+  website: string | null;
+  email: string | null;
+  contactPerson: string | null;
+  description: string | null;
+  descriptionEn: string | null;
+  logo: string | null;
+  coverImage: string | null;
+  establishedYear: number | null;
+  employeeCount: string | null;
+  specializations: string[];
+  certifications: string[];
+  verified: boolean;
+  verifiedAt: Date | null;
+  status: string;
+  rating: number;
+  reviewCount: number;
+  totalSales: number;
+  totalRevenue: number;
+  responseTime: string | null;
+  profileCompletion: number;
+  trustScore: number;
+  workingHours?: Array<{
+    day: string;
+    dayIndex: number;
+    open: string | null;
+    close: string | null;
+    isOpen: boolean;
+  }>;
+  socialMedia?: Array<{
+    platform: string;
+    url: string;
+    isActive: boolean;
+  }>;
+}
+
+export interface SellerSettings {
+  storeName: string | null;
+  storeNameAr: string | null;
+  storeSlug: string | null;
+  currency: string;
+  language: string;
+  timeZone: string;
+  theme: string;
+  primaryColor: string;
+  secondaryColor: string;
+  showPrices: boolean;
+  showStock: boolean;
+  allowNegotiation: boolean;
+  autoAcceptOrders: boolean;
+  requireDeposit: boolean;
+  depositPercentage: number;
+  minimumOrderValue: number;
+  deliveryRadius: number;
+  freeShippingThreshold: number;
+  returnPolicy: string | null;
+  returnPolicyAr: string | null;
+  privacyPolicy: string | null;
+  privacyPolicyAr: string | null;
+  termsOfService: string | null;
+  termsOfServiceAr: string | null;
+  paymentMethods?: Array<{
+    method: string;
+    isEnabled: boolean;
+    fees: number;
+  }>;
+  shippingMethods?: Array<{
+    name: string;
+    nameAr: string | null;
+    cost: number;
+    estimatedDays: string;
+    isActive: boolean;
+  }>;
+}
 
 export interface CreateSellerInput {
   userId: string;
@@ -468,6 +607,584 @@ export class SellerService {
         },
       },
     });
+  }
+
+  /**
+   * Get enhanced seller dashboard data with analytics
+   */
+  static async getEnhancedDashboard(sellerId: string, period: '7d' | '30d' = '7d'): Promise<SellerDashboardData> {
+    const days = period === '7d' ? 7 : 30;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date();
+    endDate.setHours(23, 59, 59, 999);
+
+    // Get seller info
+    const seller = await prisma.seller.findUnique({
+      where: { id: sellerId },
+      include: {
+        listings: {
+          where: { status: 'PUBLISHED' }
+        }
+      }
+    });
+
+    if (!seller) throw new Error('Seller not found');
+
+    // Get analytics data for the period
+    const analytics = await prisma.sellerAnalytics.findMany({
+      where: {
+        sellerId,
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      orderBy: { date: 'asc' }
+    });
+
+    // Get previous period data for growth calculation
+    const prevStartDate = new Date(startDate);
+    prevStartDate.setDate(prevStartDate.getDate() - days);
+    
+    const prevAnalytics = await prisma.sellerAnalytics.findMany({
+      where: {
+        sellerId,
+        date: {
+          gte: prevStartDate,
+          lt: startDate
+        }
+      }
+    });
+
+    // Get recent orders
+    const recentOrders = await prisma.order.findMany({
+      where: {
+        items: { some: { listing: { sellerId } } },
+        createdAt: {
+          gte: startDate
+        }
+      },
+      include: {
+        buyer: true,
+        items: true
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10
+    });
+
+    // Get top listings by views
+    const topListings = await prisma.listing.findMany({
+      where: {
+        sellerId,
+        status: 'PUBLISHED'
+      },
+      include: {
+        photos: {
+          take: 1,
+          orderBy: { sortOrder: 'asc' }
+        }
+      },
+      orderBy: { viewCount: 'desc' },
+      take: 5
+    });
+
+    // Calculate totals for current period
+    const currentTotals = analytics.reduce((acc, day) => ({
+      views: acc.views + day.views,
+      inquiries: acc.inquiries + day.inquiries,
+      orders: acc.orders + day.orders,
+      revenue: acc.revenue + day.revenue,
+      newListings: acc.newListings + day.newListings
+    }), { views: 0, inquiries: 0, orders: 0, revenue: 0, newListings: 0 });
+
+    // Calculate totals for previous period
+    const prevTotals = prevAnalytics.reduce((acc, day) => ({
+      views: acc.views + day.views,
+      inquiries: acc.inquiries + day.inquiries,
+      orders: acc.orders + day.orders,
+      revenue: acc.revenue + day.revenue
+    }), { views: 0, inquiries: 0, orders: 0, revenue: 0 });
+
+    // Calculate growth percentages
+    const calculateGrowth = (current: number, previous: number) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return ((current - previous) / previous) * 100;
+    };
+
+    // Prepare chart data
+    const chartData = [];
+    for (let i = 0; i < days; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - (days - i - 1));
+      date.setHours(0, 0, 0, 0);
+
+      const dayData = analytics.find(a => 
+        new Date(a.date).toDateString() === date.toDateString()
+      );
+
+      chartData.push({
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        views: dayData?.views || 0,
+        inquiries: dayData?.inquiries || 0,
+        orders: dayData?.orders || 0,
+        revenue: dayData?.revenue || 0
+      });
+    }
+
+    return {
+      overview: {
+        totalViews: currentTotals.views,
+        totalInquiries: currentTotals.inquiries,
+        totalOrders: currentTotals.orders,
+        totalRevenue: currentTotals.revenue,
+        totalNewListings: currentTotals.newListings,
+        activeListings: seller.listings.length,
+        averageRating: seller.rating,
+        totalReviews: seller.reviewCount,
+        totalSales: seller.totalSales,
+        isVerified: seller.verified
+      },
+      growth: {
+        viewsGrowth: calculateGrowth(currentTotals.views, prevTotals.views),
+        inquiriesGrowth: calculateGrowth(currentTotals.inquiries, prevTotals.inquiries),
+        ordersGrowth: calculateGrowth(currentTotals.orders, prevTotals.orders),
+        revenueGrowth: calculateGrowth(currentTotals.revenue, prevTotals.revenue)
+      },
+      chartData,
+      topListings: topListings.map(listing => ({
+        id: listing.id,
+        title: listing.titleAr,
+        titleEn: listing.titleEn || undefined,
+        views: listing.viewCount,
+        price: listing.priceSar,
+        image: listing.photos[0]?.url || null
+      })),
+      recentOrders: recentOrders.map(order => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        buyerName: order.buyer.name || 'Unknown',
+        items: order.items.length,
+        total: order.total,
+        status: order.status,
+        createdAt: order.createdAt.toISOString()
+      })),
+      period: {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        period
+      }
+    };
+  }
+
+  /**
+   * Get seller profile with complete data
+   */
+  static async getSellerProfile(sellerId: string): Promise<SellerProfile | null> {
+    const seller = await prisma.seller.findUnique({
+      where: { id: sellerId },
+      include: {
+        workingHours: {
+          orderBy: { dayIndex: 'asc' }
+        },
+        socialMedia: {
+          where: { isActive: true }
+        }
+      }
+    });
+
+    if (!seller) return null;
+
+    // Calculate profile completion
+    const profileCompletion = this.calculateProfileCompletion(seller);
+
+    return {
+      ...seller,
+      profileCompletion,
+      workingHours: seller.workingHours.map(wh => ({
+        day: wh.day,
+        dayIndex: wh.dayIndex,
+        open: wh.open,
+        close: wh.close,
+        isOpen: wh.isOpen
+      })),
+      socialMedia: seller.socialMedia.map(sm => ({
+        platform: sm.platform,
+        url: sm.url,
+        isActive: sm.isActive
+      }))
+    };
+  }
+
+  /**
+   * Update seller profile with working hours and social media
+   */
+  static async updateSellerProfile(
+    sellerId: string,
+    data: Partial<SellerProfile>
+  ) {
+    const { workingHours, socialMedia, profileCompletion, trustScore, totalSales, totalRevenue, responseTime, ...profileData } = data;
+
+    // Update main profile
+    const updatedSeller = await prisma.seller.update({
+      where: { id: sellerId },
+      data: {
+        ...profileData
+      }
+    });
+
+    // Update working hours if provided
+    if (workingHours) {
+      await prisma.sellerWorkingHours.deleteMany({
+        where: { sellerId }
+      });
+
+      await prisma.sellerWorkingHours.createMany({
+        data: workingHours.map(wh => ({
+          sellerId,
+          ...wh
+        }))
+      });
+    }
+
+    // Update social media if provided
+    if (socialMedia) {
+      for (const sm of socialMedia) {
+        await prisma.sellerSocialMedia.upsert({
+          where: {
+            sellerId_platform: {
+              sellerId,
+              platform: sm.platform
+            }
+          },
+          update: {
+            url: sm.url,
+            isActive: sm.isActive
+          },
+          create: {
+            sellerId,
+            ...sm
+          }
+        });
+      }
+    }
+
+    return updatedSeller;
+  }
+
+  /**
+   * Get and manage seller settings
+   */
+  static async getSellerSettings(sellerId: string): Promise<SellerSettings | null> {
+    const settings = await prisma.sellerSettings.findUnique({
+      where: { sellerId },
+      include: {
+        seller: {
+          include: {
+            paymentMethods: true,
+            shippingMethods: true
+          }
+        }
+      }
+    });
+
+    if (!settings) {
+      // Create default settings if not exists
+      const defaultSettings = await prisma.sellerSettings.create({
+        data: {
+          sellerId,
+          storeName: null,
+          storeNameAr: null,
+          storeSlug: null
+        },
+        include: {
+          seller: {
+            include: {
+              paymentMethods: true,
+              shippingMethods: true
+            }
+          }
+        }
+      });
+
+      // Initialize default payment methods
+      await prisma.sellerPaymentMethod.createMany({
+        data: [
+          { sellerId, method: 'cash_on_delivery', isEnabled: true, fees: 0 },
+          { sellerId, method: 'bank_transfer', isEnabled: false, fees: 0 },
+          { sellerId, method: 'credit_card', isEnabled: false, fees: 2.5 },
+          { sellerId, method: 'apple_pay', isEnabled: false, fees: 2.9 }
+        ],
+        skipDuplicates: true
+      });
+
+      // Initialize default shipping methods
+      await prisma.sellerShippingMethod.createMany({
+        data: [
+          {
+            sellerId,
+            name: 'Standard Delivery',
+            nameAr: 'التوصيل العادي',
+            cost: 25,
+            estimatedDays: '2-3',
+            isActive: true
+          },
+          {
+            sellerId,
+            name: 'Express Delivery',
+            nameAr: 'التوصيل السريع',
+            cost: 50,
+            estimatedDays: '1-2',
+            isActive: false
+          }
+        ],
+        skipDuplicates: true
+      });
+
+      return {
+        ...defaultSettings,
+        paymentMethods: defaultSettings.seller.paymentMethods,
+        shippingMethods: defaultSettings.seller.shippingMethods
+      };
+    }
+
+    return {
+      ...settings,
+      paymentMethods: settings.seller.paymentMethods,
+      shippingMethods: settings.seller.shippingMethods
+    };
+  }
+
+  /**
+   * Track seller analytics
+   */
+  static async trackAnalytics(
+    sellerId: string,
+    type: 'view' | 'inquiry' | 'order',
+    data?: {
+      revenue?: number;
+      customerId?: string;
+    }
+  ) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const analytics = await prisma.sellerAnalytics.findUnique({
+      where: {
+        sellerId_date: {
+          sellerId,
+          date: today
+        }
+      }
+    });
+
+    const updateData: Prisma.SellerAnalyticsUpdateInput = {};
+    
+    if (type === 'view') {
+      updateData.views = { increment: 1 };
+    } else if (type === 'inquiry') {
+      updateData.inquiries = { increment: 1 };
+    } else if (type === 'order' && data?.revenue) {
+      updateData.orders = { increment: 1 };
+      updateData.revenue = { increment: data.revenue };
+      
+      if (data.customerId) {
+        // Track unique customers (simplified - in production, use a separate tracking table)
+        updateData.uniqueCustomers = { increment: 1 };
+      }
+    }
+
+    if (analytics) {
+      await prisma.sellerAnalytics.update({
+        where: { id: analytics.id },
+        data: updateData
+      });
+    } else {
+      await prisma.sellerAnalytics.create({
+        data: {
+          sellerId,
+          date: today,
+          views: type === 'view' ? 1 : 0,
+          inquiries: type === 'inquiry' ? 1 : 0,
+          orders: type === 'order' ? 1 : 0,
+          revenue: type === 'order' && data?.revenue ? data.revenue : 0,
+          uniqueCustomers: type === 'order' && data?.customerId ? 1 : 0
+        }
+      });
+    }
+  }
+
+  /**
+   * Get seller counts for dashboard
+   */
+  static async getSellerCounts(sellerId: string) {
+    const [
+      pendingOrders,
+      processingOrders,
+      readyOrders,
+      shippedOrders,
+      completedOrders,
+      totalListings,
+      draftListings,
+      lowStockListings,
+      outOfStockListings,
+      unreadMessages,
+      todayViews,
+      todayInquiries,
+      newCustomersToday
+    ] = await Promise.all([
+      prisma.order.count({ 
+        where: { 
+          items: { some: { listing: { sellerId } } },
+          status: 'PENDING' 
+        } 
+      }),
+      prisma.order.count({ 
+        where: { 
+          items: { some: { listing: { sellerId } } },
+          status: 'PROCESSING' 
+        } 
+      }),
+      prisma.order.count({ 
+        where: { 
+          items: { some: { listing: { sellerId } } },
+          status: 'READY_TO_SHIP' 
+        } 
+      }),
+      prisma.order.count({ 
+        where: { 
+          items: { some: { listing: { sellerId } } },
+          status: 'SHIPPED' 
+        } 
+      }),
+      prisma.order.count({ 
+        where: { 
+          items: { some: { listing: { sellerId } } },
+          status: 'DELIVERED' 
+        } 
+      }),
+      prisma.listing.count({ where: { sellerId, status: 'PUBLISHED' } }),
+      prisma.listing.count({ where: { sellerId, status: 'DRAFT' } }),
+      prisma.listing.count({ where: { sellerId, quantity: { lte: 5, gt: 0 } } }),
+      prisma.listing.count({ where: { sellerId, quantity: 0 } }),
+      prisma.message.count({
+        where: {
+          conversation: {
+            OR: [
+              { sellerId },
+              { 
+                messages: {
+                  some: {
+                    sender: {
+                      seller: {
+                        id: sellerId
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          isRead: false,
+          senderId: {
+            not: sellerId
+          }
+        }
+      }),
+      // Get today's analytics
+      prisma.sellerAnalytics.findFirst({
+        where: {
+          sellerId,
+          date: {
+            gte: new Date(new Date().setHours(0, 0, 0, 0)),
+            lte: new Date(new Date().setHours(23, 59, 59, 999))
+          }
+        }
+      }).then(analytics => analytics?.views || 0),
+      prisma.sellerAnalytics.findFirst({
+        where: {
+          sellerId,
+          date: {
+            gte: new Date(new Date().setHours(0, 0, 0, 0)),
+            lte: new Date(new Date().setHours(23, 59, 59, 999))
+          }
+        }
+      }).then(analytics => analytics?.inquiries || 0),
+      prisma.sellerAnalytics.findFirst({
+        where: {
+          sellerId,
+          date: {
+            gte: new Date(new Date().setHours(0, 0, 0, 0)),
+            lte: new Date(new Date().setHours(23, 59, 59, 999))
+          }
+        }
+      }).then(analytics => analytics?.uniqueCustomers || 0)
+    ]);
+
+    const activeOrders = pendingOrders + processingOrders + readyOrders + shippedOrders;
+    const urgentActions = pendingOrders + lowStockListings + outOfStockListings;
+
+    return {
+      orders: {
+        pending: pendingOrders,
+        processing: processingOrders,
+        ready: readyOrders,
+        shipped: shippedOrders,
+        completed: completedOrders,
+        returns: 0, // To be implemented with returns feature
+        total: activeOrders
+      },
+      inventory: {
+        total: totalListings,
+        draft: draftListings,
+        lowStock: lowStockListings,
+        outOfStock: outOfStockListings,
+        archived: 0 // To be implemented
+      },
+      messages: {
+        unread: unreadMessages
+      },
+      activity: {
+        recentViews: todayViews,
+        recentInquiries: todayInquiries,
+        newCustomers: newCustomersToday
+      },
+      summary: {
+        activeOrders,
+        urgentActions,
+        totalProducts: totalListings
+      }
+    };
+  }
+
+  /**
+   * Calculate profile completion percentage
+   */
+  private static calculateProfileCompletion(seller: any): number {
+    const fields = [
+      'businessName',
+      'businessNameEn',
+      'businessType',
+      'commercialLicense',
+      'taxNumber',
+      'city',
+      'district',
+      'region',
+      'address',
+      'phone',
+      'email',
+      'contactPerson',
+      'description',
+      'descriptionEn',
+      'logo',
+      'establishedYear',
+      'employeeCount'
+    ];
+
+    const filledFields = fields.filter(field => seller[field] !== null && seller[field] !== '');
+    return Math.round((filledFields.length / fields.length) * 100);
   }
 
   /**

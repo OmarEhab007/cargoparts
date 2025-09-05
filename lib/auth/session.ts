@@ -242,6 +242,13 @@ export class SessionService {
   }
 
   /**
+   * Alias for getCurrentSession - for consistency with frontend usage
+   */
+  static async getSession(): Promise<SessionData | null> {
+    return this.getCurrentSession();
+  }
+
+  /**
    * Get session stats for user
    */
   static async getUserSessionStats(userId: string): Promise<{

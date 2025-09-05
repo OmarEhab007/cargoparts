@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+import { ErrorBoundary, SellerErrorFallback } from '@/components/ui/error-boundary';
+import type { SellerListing, InventoryStats } from '@/lib/types/seller-api';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -102,53 +105,11 @@ import {
   ArrowDown,
 } from 'lucide-react';
 
-interface InventoryItem {
-  id: string;
-  titleAr: string;
-  titleEn: string | null;
-  sku: string;
-  priceSar: number;
-  quantity: number;
-  make: string;
-  model: string;
-  fromYear: number;
-  toYear: number;
-  condition: string;
-  status: string;
-  viewCount: number;
-  publishedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-  photos: { url: string; alt?: string }[];
+// Enhanced InventoryItem with additional computed fields
+interface InventoryItem extends SellerListing {
   isLowStock: boolean;
   daysSinceCreated: number;
   reviewCount: number;
-}
-
-interface InventoryStats {
-  overview: {
-    totalListings: number;
-    published: number;
-    draft: number;
-    sold: number;
-    suspended: number;
-    totalQuantity: number;
-    totalViews: number;
-  };
-  stockAlerts: {
-    lowStock: number;
-    outOfStock: number;
-  };
-  activity: {
-    newListingsThisMonth: number;
-  };
-  topPerformers: Array<{
-    id: string;
-    title: string;
-    views: number;
-    price: number;
-    image: string | null;
-  }>;
 }
 
 const conditionLabels: Record<string, Record<string, string>> = {
@@ -167,11 +128,12 @@ export default function InventoryPage() {
   const locale = useLocale();
   const router = useRouter();
   const isArabic = locale === 'ar';
+  const { user, seller, isLoading: authLoading, isLoggedIn } = useAuth();
   
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [stats, setStats] = useState<InventoryStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [sellerId, setSellerId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -185,48 +147,28 @@ export default function InventoryPage() {
   const [selectedAction, setSelectedAction] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   
-  // Fetch seller information and inventory
+  // Authentication check with early return
   useEffect(() => {
-    const fetchSellerInfo = async () => {
-      try {
-        // Get current user and seller info from the server
-        const userResponse = await fetch('/api/auth/me');
-        if (!userResponse.ok) {
-          router.push(`/${locale}/auth/login`);
-          return;
-        }
-        
-        const userData = await userResponse.json();
-        if (userData.user.role !== 'SELLER') {
-          router.push(`/${locale}`);
-          return;
-        }
-
-        // Get seller profile to get seller ID
-        const sellerResponse = await fetch('/api/sellers/me');
-        if (!sellerResponse.ok) {
-          console.error('Failed to fetch seller profile');
-          return;
-        }
-        
-        const sellerData = await sellerResponse.json();
-        setSellerId(sellerData.data.id);
-        
-      } catch (error) {
-        console.error('Error fetching seller info:', error);
-        router.push(`/${locale}/auth/login`);
-      }
-    };
-
-    fetchSellerInfo();
-  }, [locale, router]);
-
-  // Fetch inventory data when seller ID is available
-  useEffect(() => {
-    if (!sellerId) return;
+    if (authLoading) return; // Don't redirect while loading
     
+    if (!isLoggedIn) {
+      router.push(`/${locale}/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    
+    if (user?.role !== 'SELLER') {
+      router.push(`/${locale}/`);
+      return;
+    }
+  }, [authLoading, isLoggedIn, user, router, locale]);
+
+  // Fetch inventory data
+  useEffect(() => {
     const fetchInventory = async () => {
+      if (!seller?.id || authLoading) return;
+      
       setLoading(true);
+      setError(null);
       try {
         const params = new URLSearchParams({
           page: currentPage.toString(),
@@ -239,68 +181,144 @@ export default function InventoryPage() {
           sortOrder
         });
         
-        const response = await fetch(`/api/sellers/${sellerId}/inventory?${params.toString()}`);
+        // Use the general listings API with seller filter
+        const response = await fetch(`/api/listings?sellerId=${seller.id}&${params.toString()}`);
         if (!response.ok) {
           throw new Error('Failed to fetch inventory');
         }
         
         const data = await response.json();
-        setInventory(data.data || []);
-        setStats(data.metadata?.metrics || null);
+        
+        // Check if data is in the expected format and handle different API response structures
+        let listingsData = [];
+        if (Array.isArray(data)) {
+          listingsData = data;
+        } else if (Array.isArray(data.data)) {
+          listingsData = data.data;
+        } else if (Array.isArray(data.items)) {
+          listingsData = data.items;
+        } else {
+          console.warn('Unexpected API response structure:', data);
+          listingsData = [];
+        }
+        
+        // Transform the listings data to match our inventory interface
+        const transformedInventory = listingsData.map((listing: any) => ({
+          id: listing.id,
+          titleAr: listing.titleAr,
+          titleEn: listing.titleEn,
+          sku: listing.sku,
+          priceSar: listing.priceSar,
+          quantity: listing.quantity,
+          make: listing.make,
+          model: listing.model,
+          fromYear: listing.fromYear,
+          toYear: listing.toYear,
+          condition: listing.condition,
+          status: listing.status,
+          viewCount: listing.viewCount || 0,
+          publishedAt: listing.publishedAt,
+          createdAt: listing.createdAt,
+          updatedAt: listing.updatedAt,
+          photos: listing.photos || [],
+          isLowStock: listing.quantity < 5, // Simple low stock logic
+          daysSinceCreated: Math.floor((new Date().getTime() - new Date(listing.createdAt).getTime()) / (1000 * 60 * 60 * 24)),
+          reviewCount: 0 // TODO: Add reviews count when reviews system is implemented
+        }));
+        
+        setInventory(transformedInventory);
+        
+        // Calculate stats from the inventory data (with safe array access)
+        const totalListings = transformedInventory.length;
+        const published = transformedInventory.filter((item: any) => item.status === 'PUBLISHED').length;
+        const draft = transformedInventory.filter((item: any) => item.status === 'DRAFT').length;
+        const sold = transformedInventory.filter((item: any) => item.status === 'SOLD').length;
+        const suspended = transformedInventory.filter((item: any) => item.status === 'SUSPENDED').length;
+        const totalQuantity = transformedInventory.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+        const totalViews = transformedInventory.reduce((sum: number, item: any) => sum + (item.viewCount || 0), 0);
+        const lowStock = transformedInventory.filter((item: any) => item.isLowStock && item.quantity > 0).length;
+        const outOfStock = transformedInventory.filter((item: any) => item.quantity === 0).length;
+        
+        setStats({
+          overview: {
+            totalListings,
+            published,
+            draft,
+            sold,
+            suspended,
+            totalQuantity,
+            totalViews
+          },
+          stockAlerts: {
+            lowStock,
+            outOfStock
+          },
+          activity: {
+            newListingsThisMonth: 0 // TODO: Calculate based on date
+          },
+          topPerformers: [] // TODO: Implement top performers logic
+        });
         
       } catch (error) {
         console.error('Error fetching inventory:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        setError(isArabic 
+          ? `فشل في تحميل بيانات المخزون: ${errorMessage}`
+          : `Failed to load inventory data: ${errorMessage}`
+        );
       } finally {
         setLoading(false);
       }
     };
 
     fetchInventory();
-  }, [sellerId, currentPage, itemsPerPage, searchQuery, filterStatus, filterCondition, activeTab, sortBy, sortOrder]);
+  }, [seller?.id, authLoading, currentPage, itemsPerPage, searchQuery, filterStatus, filterCondition, activeTab, sortBy, sortOrder]);
   
   // Since filtering and sorting is handled server-side, we can use the inventory directly
   // Client-side filtering is only needed for local search
-  const paginatedInventory = inventory;
-  const totalPages = 1; // Server handles pagination
+  const paginatedInventory = useMemo(() => inventory, [inventory]);
+  const totalPages = useMemo(() => 1, []); // Server handles pagination
   
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = useCallback((checked: boolean) => {
     if (checked) {
       setSelectedItems(new Set(paginatedInventory.map(item => item.id)));
     } else {
       setSelectedItems(new Set());
     }
-  };
+  }, [paginatedInventory]);
   
-  const handleSelectItem = (itemId: string, checked: boolean) => {
-    const newSelected = new Set(selectedItems);
-    if (checked) {
-      newSelected.add(itemId);
-    } else {
-      newSelected.delete(itemId);
-    }
-    setSelectedItems(newSelected);
-  };
+  const handleSelectItem = useCallback((itemId: string, checked: boolean) => {
+    setSelectedItems(prev => {
+      const newSelected = new Set(prev);
+      if (checked) {
+        newSelected.add(itemId);
+      } else {
+        newSelected.delete(itemId);
+      }
+      return newSelected;
+    });
+  }, []);
   
-  const handleBulkAction = (action: string) => {
+  const handleBulkAction = useCallback((action: string) => {
     setSelectedAction(action);
     setBulkActionDialogOpen(true);
-  };
+  }, []);
   
-  const executeBulkAction = () => {
+  const executeBulkAction = useCallback(() => {
     // Execute the bulk action
     console.log(`Executing ${selectedAction} on ${selectedItems.size} items`);
     setBulkActionDialogOpen(false);
     setSelectedItems(new Set());
-  };
+  }, [selectedAction, selectedItems.size]);
   
-  const handleSort = (field: string) => {
+  const handleSort = useCallback((field: string) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortBy(field);
       setSortOrder('asc');
     }
-  };
+  }, [sortBy, sortOrder]);
   
   const getStockStatus = (item: InventoryItem) => {
     if (item.quantity === 0) {
@@ -324,8 +342,62 @@ export default function InventoryPage() {
     });
   };
   
+  // Show loading for authentication or data
+  if (authLoading || loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">
+              {isArabic ? 'جاري التحميل...' : 'Loading inventory...'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if authentication is still loading or user is being redirected
+  if (!authLoading && (!isLoggedIn || user?.role !== 'SELLER' || !seller)) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">
+              {isArabic ? 'إعادة توجيه...' : 'Redirecting...'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-600">{error}</p>
+          <Button 
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              window.location.reload();
+            }} 
+            className="mt-2"
+            variant="outline"
+          >
+            {isArabic ? 'إعادة المحاولة' : 'Retry'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <ErrorBoundary fallback={SellerErrorFallback}>
+      <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -768,7 +840,7 @@ export default function InventoryPage() {
                               {isArabic ? 'التحليلات' : 'Analytics'}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            {item.status === 'active' ? (
+                            {item.status === 'PUBLISHED' ? (
                               <DropdownMenuItem>
                                 <XCircle className="mr-2 h-4 w-4" />
                                 {isArabic ? 'إلغاء التفعيل' : 'Deactivate'}
@@ -806,8 +878,8 @@ export default function InventoryPage() {
             <div className="border-t px-4 py-4 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 {isArabic 
-                  ? `عرض ${(currentPage - 1) * itemsPerPage + 1} إلى ${Math.min(currentPage * itemsPerPage, sortedInventory.length)} من ${sortedInventory.length} عنصر`
-                  : `Showing ${(currentPage - 1) * itemsPerPage + 1} to ${Math.min(currentPage * itemsPerPage, sortedInventory.length)} of ${sortedInventory.length} items`}
+                  ? `عرض ${(currentPage - 1) * itemsPerPage + 1} إلى ${Math.min(currentPage * itemsPerPage, inventory.length)} من ${inventory.length} عنصر`
+                  : `Showing ${(currentPage - 1) * itemsPerPage + 1} to ${Math.min(currentPage * itemsPerPage, inventory.length)} of ${inventory.length} items`}
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -920,6 +992,7 @@ export default function InventoryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

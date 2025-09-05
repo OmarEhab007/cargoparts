@@ -1,127 +1,98 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserService } from '@/lib/auth/user-service';
-import { z } from 'zod';
-import { checkRateLimit, getClientIp } from '@/lib/auth/middleware';
+import { emailService } from '@/lib/communication/email-service';
+import { registerSchema } from '@/lib/auth/validation';
+import { AuthErrors, createErrorResponse, handleUnknownError } from '@/lib/auth/errors';
+import { withRateLimit, otpRateLimiter } from '@/lib/auth/rate-limiter';
 
-const registerSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
-  phone: z.string().regex(/^(\+966|0)?[5][0-9]{8}$/, 'Invalid Saudi phone number').optional(),
-  role: z.enum(['BUYER', 'SELLER']).default('BUYER'),
-  preferredLocale: z.enum(['ar', 'en']).default('ar'),
-});
-
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    // Rate limiting
-    const clientIp = getClientIp(request);
-    const rateLimit = checkRateLimit(clientIp, 5, 60000); // 5 requests per minute
-    
-    if (rateLimit.isLimited) {
-      return NextResponse.json(
-        {
-          error: 'Too many registration attempts',
-          details: {
-            retryAfter: Math.ceil((rateLimit.resetTime - Date.now()) / 1000),
-          },
-        },
-        { status: 429 }
-      );
+    // Apply rate limiting
+    const rateLimitResponse = await withRateLimit(otpRateLimiter)(req);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
-    const body = await request.json();
-    const data = registerSchema.parse(body);
+    // Parse and validate request body
+    const body = await req.json();
+    const validatedData = registerSchema.parse(body);
 
-    // Create user
-    const user = await UserService.createUser({
-      email: data.email,
-      name: data.name,
-      phone: data.phone,
-      role: data.role,
-      preferredLocale: data.preferredLocale,
-    });
-
-    // Return success response (don't include sensitive data)
-    return NextResponse.json(
-      {
-        message: 'Registration successful. Please check your email for verification code.',
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          phone: user.phone,
-          role: user.role,
-          status: user.status,
-        },
-        requiresVerification: true,
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error('Registration error:', error);
-
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          error: 'Invalid input data',
-          details: error.issues.map(issue => ({
-            field: issue.path.join('.'),
-            message: issue.message,
-          })),
-        },
-        { status: 400 }
-      );
+    // Check if user already exists
+    const existingUser = await UserService.getUserByEmail(validatedData.email);
+    if (existingUser) {
+      throw AuthErrors.USER_ALREADY_EXISTS();
     }
 
-    if (error instanceof Error) {
-      // Handle known errors
-      if (error.message.includes('already exists')) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 409 }
-        );
+    // Check if phone number is already taken
+    if (validatedData.phone) {
+      const existingPhoneUser = await UserService.getUserByPhone(validatedData.phone);
+      if (existingPhoneUser) {
+        throw AuthErrors.PHONE_ALREADY_EXISTS();
       }
     }
 
-    return NextResponse.json(
-      { error: 'Registration failed. Please try again.' },
-      { status: 500 }
-    );
+    // Create user
+    const user = await UserService.createUser({
+      email: validatedData.email,
+      name: validatedData.name,
+      phone: validatedData.phone,
+      preferredLocale: validatedData.preferredLocale,
+    });
+
+    // Send verification email with OTP
+    try {
+      // Get the generated OTP code for email verification
+      const { OtpService } = await import('@/lib/auth/otp');
+      const otpStatus = await OtpService.getOtpStatus(user.id, 'EMAIL_VERIFICATION');
+      
+      if (otpStatus.hasActiveOtp) {
+        // Find the actual OTP code from the database
+        const { prisma } = await import('@/lib/db/prisma');
+        const otpRecord = await prisma.otpCode.findFirst({
+          where: {
+            userId: user.id,
+            type: 'EMAIL_VERIFICATION',
+            verified: false,
+            expiresAt: { gte: new Date() },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+        
+        if (otpRecord) {
+          await emailService.sendVerificationEmail(user.email, otpRecord.code, (user.preferredLocale as 'ar' | 'en') || 'ar');
+        }
+      }
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Don't fail registration if email sending fails
+    }
+
+    // Return success response without sensitive data
+    return NextResponse.json({
+      success: true,
+      message: 'Account created successfully. Please check your email for verification.',
+      messageAr: 'تم إنشاء الحساب بنجاح. يرجى التحقق من بريدك الإلكتروني لتأكيد الحساب.',
+      data: {
+        userId: user.id,
+        email: user.email,
+        status: user.status,
+        requiresVerification: !user.emailVerified,
+      },
+    }, { status: 201 });
+
+  } catch (error) {
+    const authError = handleUnknownError(error);
+    return createErrorResponse(authError);
   }
 }
 
-// GET request to check if email/phone is available
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const email = searchParams.get('email');
-    const phone = searchParams.get('phone');
-
-    if (!email && !phone) {
-      return NextResponse.json(
-        { error: 'Email or phone parameter is required' },
-        { status: 400 }
-      );
-    }
-
-    const checks = await Promise.all([
-      email ? UserService.getUserByEmail(email) : null,
-      phone ? UserService.getUserByPhone(phone) : null,
-    ]);
-
-    const emailTaken = !!checks[0];
-    const phoneTaken = !!checks[1];
-
-    return NextResponse.json({
-      available: !emailTaken && !phoneTaken,
-      emailTaken,
-      phoneTaken,
-    });
-  } catch (error) {
-    console.error('Availability check error:', error);
-    return NextResponse.json(
-      { error: 'Failed to check availability' },
-      { status: 500 }
-    );
-  }
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }

@@ -85,7 +85,8 @@ export class ListingService {
         data: {
           ...listingData,
           oem_numbers: oemNumbers || [],
-          status: 'DRAFT', // Start as draft
+          status: 'PUBLISHED', // Auto-publish new listings
+          publishedAt: new Date(),
           quantity: data.quantity || 1,
           minQuantity: data.minQuantity || 1,
         },
@@ -167,7 +168,7 @@ export class ListingService {
    * Get a single listing by ID
    */
   static async getListingById(id: string, includeInactive = false) {
-    const where: Record<string, unknown> = { id };
+    const where: any = { id };
     
     if (!includeInactive) {
       where.isActive = true;

@@ -81,9 +81,9 @@ export class LocalStorageService {
     let processedBuffer = buffer;
     
     if (file.type.startsWith('image/')) {
-      processedBuffer = await sharp(buffer)
+      processedBuffer = Buffer.from(await sharp(buffer)
         .jpeg({ quality, progressive: true })
-        .toBuffer();
+        .toBuffer());
     }
 
     await fs.writeFile(filePath, processedBuffer);

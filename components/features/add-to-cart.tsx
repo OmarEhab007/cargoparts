@@ -19,7 +19,7 @@ interface AddToCartProps {
     city: string;
     seller: {
       id: string;
-      yardName: string;
+      businessName: string;
     };
     photos?: Array<{ url: string }>;
   };
@@ -55,7 +55,7 @@ export function AddToCart({ listing, variant = 'default', size = 'default', clas
       condition: listing.condition,
       city: listing.city,
       sellerId: listing.seller.id,
-      sellerName: listing.seller.yardName,
+      sellerName: listing.seller.businessName,
       image: listing.photos?.[0]?.url,
     });
     

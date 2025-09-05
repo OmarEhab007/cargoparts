@@ -339,7 +339,7 @@ export default function SearchResultsPage() {
                       {listing.fromYear} - {listing.toYear}
                     </div>
                     <div className="text-2xl font-bold flex items-center gap-1">
-                      {listing.priceSar.toLocaleString(isArabic ? 'ar-SA' : 'en-US')}
+                      {(listing.priceSar / 100).toLocaleString(isArabic ? 'ar-SA' : 'en-US')}
                       <SARSymbol className="h-5 w-5" />
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">

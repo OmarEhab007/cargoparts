@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import { SARSymbol } from '@/components/ui/currency-symbol';
 import { AlertCircle, ArrowRight, Loader2, CheckCircle2, User, Mail, Phone, MapPin } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ErrorBoundary, DefaultErrorFallback } from '@/components/ui/error-boundary';
 import {
   Form,
   FormControl,
@@ -105,7 +106,8 @@ export default function CheckoutPage() {
       });
       
       if (response.ok) {
-        const order = await response.json();
+        const response_data = await response.json();
+        console.log('Order response:', response_data); // Debug log
         setOrderSuccess(true);
         clearCart();
         
@@ -114,9 +116,18 @@ export default function CheckoutPage() {
           id: 'create-order'
         });
         
+        // Extract order ID from the API response structure
+        const orderId = response_data.data?.order?.id || response_data.id;
+        console.log('Extracted order ID:', orderId); // Debug log
+        
         // Redirect after a brief delay to show success state
         setTimeout(() => {
-          router.push(`/${locale}/order-success/${order.id}`);
+          if (orderId) {
+            router.push(`/${locale}/order-success/${orderId}`);
+          } else {
+            console.error('No order ID found in response');
+            router.push(`/${locale}/shop`); // Fallback redirect
+          }
         }, 1500);
       } else {
         const errorData = await response.json();
@@ -446,7 +457,7 @@ export default function CheckoutPage() {
                   type="submit" 
                   size="lg" 
                   className="w-full h-12 bg-desert-gold hover:bg-desert-gold/90 text-white font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isProcessing || !form.formState.isValid}
+                  disabled={isProcessing}
                 >
                   {isProcessing ? (
                     <>

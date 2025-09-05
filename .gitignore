@@ -215,6 +215,7 @@ sourcemap.js
 /public/uploads/
 *.local.json
 CARD_ENHANCEMENTS_SUMMARY.md
+cookies.txt
 
 # Claude AI Assistant files
 .claude/
@@ -228,9 +229,13 @@ TODO.md
 *TODO*
 *todo*
 
-# Development documentation files
+# Development documentation files (keep deployment plans)
 DATABASE_RESTORE_INSTRUCTIONS.md
 DESIGN_TOKENS.md
 ProjectDescription.md
 *_INSTRUCTIONS.md
 *_SUMMARY.md
+
+# Production deployment plans (these should be kept)
+!PRODUCTION_DEPLOYMENT_PLAN.md
+!BACKEND_PRODUCTION_PLAN.md

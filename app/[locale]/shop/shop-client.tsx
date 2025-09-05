@@ -221,14 +221,20 @@ export default function ShopClient({ initialListings }: ShopClientProps) {
         </div>
 
         {/* Desktop Search & Filters */}
-        <div className="hidden md:block space-y-4">
-          <div className="flex gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-saudi-green" />
+        <div className="hidden md:block">
+          {/* Integrated Search Bar */}
+          <div className="card-saudi p-6 space-y-4">
+            <div className="relative">
+              <Search className="absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-saudi-green" />
               <Input
                 type="search"
-                placeholder={isArabic ? 'ابحث عن قطع غيار...' : 'Search for parts...'}
-                className={`ps-10 input-modern h-12 ${isArabic ? 'text-base font-medium' : ''}`}
+                placeholder={isArabic ? 'ابحث عن قطع غيار السيارات...' : 'Search for auto parts...'}
+                className={cn(
+                  "ps-12 pe-4 h-14 text-lg bg-white border-2 border-border/20 rounded-xl",
+                  "focus:border-saudi-green focus:ring-2 focus:ring-saudi-green/20",
+                  "shadow-sm hover:shadow-md transition-all duration-300",
+                  isArabic && "font-medium"
+                )}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -246,122 +252,99 @@ export default function ShopClient({ initialListings }: ShopClientProps) {
                 />
               )}
             </div>
-            <Button onClick={handleSearch} className="btn-saudi h-12 px-6">
-              {isArabic ? 'بحث' : 'Search'}
-            </Button>
-            <Button variant="outline" onClick={handleAdvancedSearch} className="h-12 px-4">
-              <SlidersHorizontal className="me-2 h-4 w-4" />
-              {isArabic ? 'متقدم' : 'Advanced'}
-            </Button>
-          </div>
-          
-          {/* Sticky Filter Section */}
-          <div>
-            {/* Placeholder to prevent layout shift */}
-            {isSticky && <div className="h-[60px]" />}
-            
-            <div 
-              ref={filterRef}
-              className={cn(
-                "transition-all duration-200 ease-in-out bg-background border-b border-transparent",
-                isSticky && "fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-border shadow-lg"
-              )}
-            >
-              <div className={cn(
-                "flex gap-3 flex-wrap items-end",
-                isSticky ? "container mx-auto px-4 py-3" : "py-3"
-              )}>
-                <div className="flex-1 min-w-[180px] space-y-1">
-                  {!isSticky && <Label className={`hierarchy-caption text-xs ${isArabic ? 'font-semibold' : ''}`}>{isArabic ? 'الشركة المصنعة' : 'Make'}</Label>}
-                  <Select 
-                    value={selectedMake || 'all'} 
-                    onValueChange={(value) => setSelectedMake(value === 'all' ? '' : value)}
-                  >
-                    <SelectTrigger className={cn(
-                      "h-9 transition-all",
-                      isSticky ? "text-xs" : "text-sm",
-                      isArabic && "font-medium"
-                    )}>
-                      <SelectValue placeholder={isArabic ? 'اختر الشركة' : 'Select make'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">
-                        {isArabic ? 'جميع الشركات' : 'All Makes'}
+
+            {/* Filters Row */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Make Filter */}
+              <div className="flex-1 min-w-[200px]">
+                <Select 
+                  value={selectedMake || 'all'} 
+                  onValueChange={(value) => setSelectedMake(value === 'all' ? '' : value)}
+                >
+                  <SelectTrigger className={cn(
+                    "h-11 bg-white border-border/30 rounded-lg hover:border-saudi-green/50 transition-all",
+                    "focus:ring-2 focus:ring-saudi-green/20 focus:border-saudi-green",
+                    isArabic && "font-medium"
+                  )}>
+                    <SelectValue placeholder={isArabic ? 'اختر الشركة المصنعة' : 'Select make'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      {isArabic ? 'جميع الشركات' : 'All Makes'}
+                    </SelectItem>
+                    {carMakes.map(make => (
+                      <SelectItem key={make} value={make}>
+                        {make}
                       </SelectItem>
-                      {carMakes.map(make => (
-                        <SelectItem key={make} value={make}>
-                          {make}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Condition Filter */}
+              <div className="flex-1 min-w-[200px]">
+                <Select 
+                  value={selectedCondition || 'all'} 
+                  onValueChange={(value) => setSelectedCondition(value === 'all' ? '' : value)}
+                >
+                  <SelectTrigger className={cn(
+                    "h-11 bg-white border-border/30 rounded-lg hover:border-saudi-green/50 transition-all",
+                    "focus:ring-2 focus:ring-saudi-green/20 focus:border-saudi-green",
+                    isArabic && "font-medium"
+                  )}>
+                    <SelectValue placeholder={isArabic ? 'اختر الحالة' : 'Select condition'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      {isArabic ? 'جميع الحالات' : 'All Conditions'}
+                    </SelectItem>
+                    <SelectItem value="NEW">{conditionLabels.NEW[locale as 'ar' | 'en']}</SelectItem>
+                    <SelectItem value="REFURBISHED">{conditionLabels.REFURBISHED[locale as 'ar' | 'en']}</SelectItem>
+                    <SelectItem value="USED">{conditionLabels.USED[locale as 'ar' | 'en']}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <Button onClick={handleSearch} className={cn(
+                  "btn-saudi h-11 px-8 rounded-lg font-semibold",
+                  "shadow-sm hover:shadow-md transition-all duration-300"
+                )}>
+                  {isArabic ? 'بحث' : 'Search'}
+                </Button>
                 
-                <div className="flex-1 min-w-[180px] space-y-1">
-                  {!isSticky && <Label className={`hierarchy-caption text-xs ${isArabic ? 'font-semibold' : ''}`}>{isArabic ? 'الحالة' : 'Condition'}</Label>}
-                  <Select 
-                    value={selectedCondition || 'all'} 
-                    onValueChange={(value) => setSelectedCondition(value === 'all' ? '' : value)}
-                  >
-                    <SelectTrigger className={cn(
-                      "h-9 transition-all",
-                      isSticky ? "text-xs" : "text-sm",
-                      isArabic && "font-medium"
-                    )}>
-                      <SelectValue placeholder={isArabic ? 'اختر الحالة' : 'Select condition'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">
-                        {isArabic ? 'جميع الحالات' : 'All Conditions'}
-                      </SelectItem>
-                      <SelectItem value="NEW">{conditionLabels.NEW[locale as 'ar' | 'en']}</SelectItem>
-                      <SelectItem value="REFURBISHED">{conditionLabels.REFURBISHED[locale as 'ar' | 'en']}</SelectItem>
-                      <SelectItem value="USED">{conditionLabels.USED[locale as 'ar' | 'en']}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Button variant="outline" onClick={handleAdvancedSearch} className={cn(
+                  "h-11 px-4 rounded-lg border-2 hover:border-saudi-green/50",
+                  "hover:bg-saudi-green/5 transition-all duration-300"
+                )}>
+                  <SlidersHorizontal className="me-2 h-4 w-4" />
+                  {isArabic ? 'متقدم' : 'Advanced'}
+                </Button>
 
                 {/* View Toggle */}
-                <div className="flex items-center border rounded-md p-0.5 bg-muted/20">
+                <div className="flex items-center bg-muted/30 border border-border/30 rounded-lg p-1">
                   <Button
                     variant={viewMode === 'grid' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setViewMode('grid')}
-                    className={cn(
-                      "p-0 transition-all",
-                      isSticky ? "h-7 w-7" : "h-8 w-8"
-                    )}
+                    className="h-9 w-9 rounded-md"
                     title={isArabic ? 'عرض الشبكة' : 'Grid view'}
                   >
-                    <Grid3X3 className={cn(isSticky ? "h-3 w-3" : "h-4 w-4")} />
+                    <Grid3X3 className="h-4 w-4" />
                   </Button>
                   <Button
                     variant={viewMode === 'list' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setViewMode('list')}
-                    className={cn(
-                      "p-0 transition-all",
-                      isSticky ? "h-7 w-7" : "h-8 w-8"
-                    )}
+                    className="h-9 w-9 rounded-md"
                     title={isArabic ? 'عرض القائمة' : 'List view'}
                   >
-                    <List className={cn(isSticky ? "h-3 w-3" : "h-4 w-4")} />
+                    <List className="h-4 w-4" />
                   </Button>
                 </div>
 
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setShowFilters(!showFilters)} 
-                  className={cn(
-                    "md:hidden transition-all",
-                    isSticky ? "h-8 text-xs px-2" : "h-9 px-3",
-                    isArabic && "font-semibold"
-                  )}
-                >
-                  <Filter className={cn("me-2", isSticky ? "h-3 w-3" : "h-4 w-4")} />
-                  {isArabic ? 'فلاتر' : 'Filters'}
-                </Button>
-                
+                {/* Clear Filters */}
                 {(selectedMake || selectedCondition || searchQuery || selectedCategory) && (
                   <Button 
                     variant="ghost" 
@@ -373,15 +356,117 @@ export default function ShopClient({ initialListings }: ShopClientProps) {
                       setListings(initialListings);
                     }}
                     className={cn(
-                      "transition-all text-destructive hover:text-destructive",
-                      isSticky ? "h-8 text-xs px-2" : "h-9 px-3"
+                      "h-11 px-4 text-destructive hover:text-destructive hover:bg-destructive/10",
+                      "rounded-lg transition-all duration-300"
                     )}
                   >
-                    <X className={cn("me-1", isSticky ? "h-3 w-3" : "h-4 w-4")} />
-                    {isArabic ? 'مسح' : 'Clear'}
+                    <X className="me-2 h-4 w-4" />
+                    {isArabic ? 'مسح الفلاتر' : 'Clear Filters'}
                   </Button>
                 )}
               </div>
+            </div>
+          </div>
+          
+          {/* Sticky Filter Section - Simplified */}
+          <div>
+            {isSticky && <div className="h-[70px]" />}
+            
+            <div 
+              ref={filterRef}
+              className={cn(
+                "transition-all duration-200 ease-in-out",
+                isSticky && "fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-lg"
+              )}
+            >
+              {isSticky && (
+                <div className="container mx-auto px-4 py-3">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Search className="h-4 w-4 text-saudi-green" />
+                      <span className={cn("text-sm font-medium", isArabic && "font-semibold")}>
+                        {isArabic ? 'البحث والفلتر' : 'Search & Filter'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Select 
+                        value={selectedMake || 'all'} 
+                        onValueChange={(value) => setSelectedMake(value === 'all' ? '' : value)}
+                      >
+                        <SelectTrigger className="h-8 w-32 text-xs">
+                          <SelectValue placeholder={isArabic ? 'الشركة' : 'Make'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">
+                            {isArabic ? 'جميع الشركات' : 'All Makes'}
+                          </SelectItem>
+                          {carMakes.map(make => (
+                            <SelectItem key={make} value={make}>
+                              {make}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      <Select 
+                        value={selectedCondition || 'all'} 
+                        onValueChange={(value) => setSelectedCondition(value === 'all' ? '' : value)}
+                      >
+                        <SelectTrigger className="h-8 w-32 text-xs">
+                          <SelectValue placeholder={isArabic ? 'الحالة' : 'Condition'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">
+                            {isArabic ? 'جميع الحالات' : 'All Conditions'}
+                          </SelectItem>
+                          <SelectItem value="NEW">{conditionLabels.NEW[locale as 'ar' | 'en']}</SelectItem>
+                          <SelectItem value="REFURBISHED">{conditionLabels.REFURBISHED[locale as 'ar' | 'en']}</SelectItem>
+                          <SelectItem value="USED">{conditionLabels.USED[locale as 'ar' | 'en']}</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <div className="flex items-center border rounded-md p-0.5 bg-muted/20">
+                        <Button
+                          variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setViewMode('grid')}
+                          className="h-7 w-7 p-0"
+                          title={isArabic ? 'عرض الشبكة' : 'Grid view'}
+                        >
+                          <Grid3X3 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant={viewMode === 'list' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setViewMode('list')}
+                          className="h-7 w-7 p-0"
+                          title={isArabic ? 'عرض القائمة' : 'List view'}
+                        >
+                          <List className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      
+                      {(selectedMake || selectedCondition || searchQuery || selectedCategory) && (
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => {
+                            setSelectedMake('');
+                            setSelectedCondition('');
+                            setSearchQuery('');
+                            setSelectedCategory('');
+                            setListings(initialListings);
+                          }}
+                          className="h-8 text-xs px-2 text-destructive hover:text-destructive"
+                        >
+                          <X className="h-3 w-3 me-1" />
+                          {isArabic ? 'مسح' : 'Clear'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -545,8 +630,6 @@ export default function ShopClient({ initialListings }: ShopClientProps) {
         isFavorited={quickPreviewListing ? favorites.has(quickPreviewListing.id) : false}
       />
 
-      {/* Sticky Top Padding when filter is sticky */}
-      {isSticky && <div className="h-20" />}
     </div>
   );
 }

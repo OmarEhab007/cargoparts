@@ -7,12 +7,21 @@ import { OrderStatus } from '@prisma/client';
 import { z } from 'zod';
 
 const createOrderSchema = z.object({
-  addressId: z.string().cuid('Invalid address ID'),
   items: z.array(z.object({
-    listingId: z.string().cuid('Invalid listing ID'),
+    listingId: z.string().min(1, 'Invalid listing ID'),
     quantity: z.number().int().positive().max(100, 'Quantity cannot exceed 100'),
+    price: z.number().positive('Price must be positive'),
   })).min(1, 'At least one item is required'),
-  notes: z.string().max(500, 'Notes cannot exceed 500 characters').optional(),
+  buyerInfo: z.object({
+    fullName: z.string().min(2).max(100),
+    email: z.string().email(),
+    phone: z.string().min(10),
+    addressLine1: z.string().min(5).max(200),
+    addressLine2: z.string().max(200).optional(),
+    city: z.string().min(2).max(100),
+    postalCode: z.string().max(20).optional(),
+  }),
+  totalAmount: z.number().positive('Total amount must be positive'),
 });
 
 const updateOrderStatusSchema = z.object({
@@ -147,8 +156,7 @@ export async function GET(request: NextRequest) {
       })),
       result.pagination.page,
       result.pagination.limit,
-      result.pagination.total,
-      'Orders retrieved successfully'
+      result.pagination.total
     );
   } catch (error) {
     return handleError(error);
@@ -158,35 +166,14 @@ export async function GET(request: NextRequest) {
 // Create new order
 export async function POST(request: NextRequest) {
   try {
-    const { context, response } = await withAuth(request);
-    
-    if (response) {
-      return response;
-    }
-
-    if (!context) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Only buyers can create orders
-    if (context.user.role !== 'BUYER') {
-      return NextResponse.json(
-        { error: 'Only buyers can create orders' },
-        { status: 403 }
-      );
-    }
-
     const body = await request.json();
     const orderData = createOrderSchema.parse(body);
 
-    const order = await OrderService.createOrder({
-      buyerId: context.user.id,
-      addressId: orderData.addressId,
+    // For guest checkout, create a guest user record or handle without user
+    const order = await OrderService.createGuestOrder({
       items: orderData.items,
-      notes: orderData.notes,
+      buyerInfo: orderData.buyerInfo,
+      totalAmount: orderData.totalAmount,
     });
 
     return createSuccessResponse({
@@ -198,18 +185,7 @@ export async function POST(request: NextRequest) {
         total: order.total,
         currency: order.currency,
         createdAt: order.createdAt,
-        items: order.items.map(item => ({
-          id: item.id,
-          listingId: item.listingId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          totalPrice: item.totalPrice,
-          listing: {
-            titleAr: item.listing.titleAr,
-            titleEn: item.listing.titleEn,
-            sku: item.listing.sku,
-          },
-        })),
+        items: order.items,
       },
     }, 'Order created successfully', 201);
   } catch (error) {

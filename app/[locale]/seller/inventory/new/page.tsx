@@ -1,18 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
+import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { SARSymbol } from '@/components/ui/currency-symbol';
-import { ImagePlaceholder } from '@/components/ui/image-placeholder';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -22,152 +21,136 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
   ArrowLeft,
-  Upload,
-  Plus,
-  X,
-  Camera,
-  Package,
-  Tag,
-  MapPin,
-  AlertCircle,
-  CheckCircle2,
   Save,
-  Eye,
-  Sparkles,
-  Car,
-  Wrench,
-  Gauge,
-  Battery,
-  Disc,
-  Cog,
+  AlertCircle,
+  Loader2,
+  Package,
+  DollarSign,
+  Hash,
+  FileText,
+  Settings,
 } from 'lucide-react';
+import { ErrorBoundary, SellerErrorFallback } from '@/components/ui/error-boundary';
 
-interface InventoryItem {
-  id: string;
-  name: string;
-  description: string;
-  oemNumber: string;
-  category: string;
-  subcategory: string;
-  condition: 'new' | 'used' | 'refurbished';
-  price: number;
-  costPrice: number;
-  quantity: number;
-  minQuantity: number;
-  location: string;
-  supplier: string;
-  images: string[];
-  brand: string;
-  model: string;
-  year: string;
-  sku: string;
-  weight: number;
-  dimensions: {
-    length: number;
-    width: number;
-    height: number;
-  };
-  warranty: number;
-  tags: string[];
-  isActive: boolean;
-  isFeatured: boolean;
+// Form data interface matching the actual database schema
+interface ListingFormData {
+  titleAr: string;
+  titleEn?: string;
+  description?: string;
+  descriptionEn?: string;
+  condition: 'NEW' | 'USED' | 'REFURBISHED';
+  priceSar: string; // String for form input, will be converted to halalas
+  originalPrice?: string;
+  quantity: string;
+  minQuantity?: string;
+  weight?: string;
+  make?: string;
+  model?: string;
+  fromYear?: string;
+  toYear?: string;
+  engineSize?: string;
+  fuelType?: string;
+  transmission?: string;
+  bodyType?: string;
+  city: string;
+  district?: string;
+  oem_numbers: string; // Will be split into array
 }
 
-const categories = [
-  { value: 'engine', label: 'Engine Parts', icon: Gauge },
-  { value: 'transmission', label: 'Transmission', icon: Cog },
-  { value: 'brakes', label: 'Brake System', icon: Disc },
-  { value: 'electrical', label: 'Electrical', icon: Battery },
-  { value: 'body', label: 'Body Parts', icon: Car },
-  { value: 'suspension', label: 'Suspension', icon: Wrench },
-  { value: 'interior', label: 'Interior', icon: Package },
-  { value: 'exterior', label: 'Exterior', icon: Package },
-  { value: 'fluids', label: 'Fluids & Oils', icon: Package },
-  { value: 'tools', label: 'Tools', icon: Wrench },
-];
-
 const conditions = [
-  { value: 'new', label: 'New/OEM', color: 'bg-green-100 text-green-800' },
-  { value: 'used', label: 'Used/Good', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'refurbished', label: 'Refurbished', color: 'bg-blue-100 text-blue-800' },
+  { value: 'NEW', labelAr: 'جديد', labelEn: 'New/OEM' },
+  { value: 'USED', labelAr: 'مستعمل', labelEn: 'Used' },
+  { value: 'REFURBISHED', labelAr: 'مجدد', labelEn: 'Refurbished' },
+] as const;
+
+const fuelTypes = [
+  { value: 'NOT_SPECIFIED', labelAr: 'غير محدد', labelEn: 'Not specified' },
+  { value: 'GASOLINE', labelAr: 'بنزين', labelEn: 'Gasoline' },
+  { value: 'DIESEL', labelAr: 'ديزل', labelEn: 'Diesel' },
+  { value: 'HYBRID', labelAr: 'هايبرد', labelEn: 'Hybrid' },
+  { value: 'ELECTRIC', labelAr: 'كهربائي', labelEn: 'Electric' },
 ];
 
-const suppliers = [
-  'Al-Rajhi Motors',
-  'Saudi Auto Parts Co.',
-  'Gulf Auto Supply',
-  'Riyadh Car Parts',
-  'Jeddah Motors',
-  'Dammam Auto Center',
-  'National Auto Parts',
-  'Kingdom Motors Supply',
+const transmissionTypes = [
+  { value: 'NOT_SPECIFIED', labelAr: 'غير محدد', labelEn: 'Not specified' },
+  { value: 'MANUAL', labelAr: 'يدوي', labelEn: 'Manual' },
+  { value: 'AUTOMATIC', labelAr: 'أوتوماتيك', labelEn: 'Automatic' },
+  { value: 'CVT', labelAr: 'CVT', labelEn: 'CVT' },
 ];
 
-const locations = [
-  'Warehouse A - Section 1',
-  'Warehouse A - Section 2',
-  'Warehouse B - Section 1',
-  'Warehouse B - Section 2',
-  'Storage Room 1',
-  'Storage Room 2',
-  'Counter Display',
-  'Online Only',
+const bodyTypes = [
+  { value: 'NOT_SPECIFIED', labelAr: 'غير محدد', labelEn: 'Not specified' },
+  { value: 'SEDAN', labelAr: 'سيدان', labelEn: 'Sedan' },
+  { value: 'SUV', labelAr: 'SUV', labelEn: 'SUV' },
+  { value: 'HATCHBACK', labelAr: 'هاتشباك', labelEn: 'Hatchback' },
+  { value: 'COUPE', labelAr: 'كوبيه', labelEn: 'Coupe' },
+  { value: 'PICKUP', labelAr: 'بيك أب', labelEn: 'Pickup' },
+  { value: 'VAN', labelAr: 'فان', labelEn: 'Van' },
+];
+
+const saudiCities = [
+  { value: 'الرياض', labelAr: 'الرياض', labelEn: 'Riyadh' },
+  { value: 'جدة', labelAr: 'جدة', labelEn: 'Jeddah' },
+  { value: 'مكة المكرمة', labelAr: 'مكة المكرمة', labelEn: 'Makkah' },
+  { value: 'المدينة المنورة', labelAr: 'المدينة المنورة', labelEn: 'Madinah' },
+  { value: 'الدمام', labelAr: 'الدمام', labelEn: 'Dammam' },
+  { value: 'الخبر', labelAr: 'الخبر', labelEn: 'Khobar' },
+  { value: 'الطائف', labelAr: 'الطائف', labelEn: 'Taif' },
+  { value: 'بريدة', labelAr: 'بريدة', labelEn: 'Buraidah' },
+  { value: 'تبوك', labelAr: 'تبوك', labelEn: 'Tabuk' },
+  { value: 'القصيم', labelAr: 'القصيم', labelEn: 'Qassim' },
 ];
 
 export default function NewInventoryPage() {
   const router = useRouter();
   const locale = useLocale();
-  const [activeTab, setActiveTab] = useState('basic');
+  const isArabic = locale === 'ar';
+  const { user, seller, isLoading: authLoading, isLoggedIn } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previewMode, setPreviewMode] = useState(false);
 
-  const [formData, setFormData] = useState<Partial<InventoryItem>>({
-    name: '',
+  const [formData, setFormData] = useState<ListingFormData>({
+    titleAr: '',
+    titleEn: '',
     description: '',
-    oemNumber: '',
-    category: '',
-    subcategory: '',
-    condition: 'used',
-    price: 0,
-    costPrice: 0,
-    quantity: 1,
-    minQuantity: 1,
-    location: '',
-    supplier: '',
-    images: [],
-    brand: '',
+    descriptionEn: '',
+    condition: 'USED',
+    priceSar: '',
+    originalPrice: '',
+    quantity: '1',
+    minQuantity: '1',
+    weight: '',
+    make: '',
     model: '',
-    year: '',
-    sku: '',
-    weight: 0,
-    dimensions: { length: 0, width: 0, height: 0 },
-    warranty: 0,
-    tags: [],
-    isActive: true,
-    isFeatured: false,
+    fromYear: '',
+    toYear: '',
+    engineSize: '',
+    fuelType: 'NOT_SPECIFIED',
+    transmission: 'NOT_SPECIFIED',
+    bodyType: 'NOT_SPECIFIED',
+    city: '',
+    district: '',
+    oem_numbers: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [newTag, setNewTag] = useState('');
-  const [dragActive, setDragActive] = useState(false);
+  
+  // Authentication check
+  useEffect(() => {
+    if (authLoading) return;
+    
+    if (!isLoggedIn) {
+      router.push(`/${locale}/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    
+    if (user?.role !== 'SELLER') {
+      router.push(`/${locale}/`);
+      return;
+    }
+  }, [authLoading, isLoggedIn, user, router, locale]);
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: keyof ListingFormData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -178,866 +161,509 @@ export default function NewInventoryPage() {
     }
   };
 
-  const handleDimensionChange = (dimension: 'length' | 'width' | 'height', value: number) => {
-    setFormData(prev => ({
-      ...prev,
-      dimensions: {
-        ...prev.dimensions!,
-        [dimension]: value
-      }
-    }));
-  };
-
-  const addTag = () => {
-    if (newTag.trim() && !formData.tags?.includes(newTag.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...(prev.tags || []), newTag.trim()]
-      }));
-      setNewTag('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags?.filter(tag => tag !== tagToRemove) || []
-    }));
-  };
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name) newErrors.name = 'Product name is required';
-    if (!formData.description) newErrors.description = 'Description is required';
-    if (!formData.category) newErrors.category = 'Category is required';
-    if (!formData.price || formData.price <= 0) newErrors.price = 'Valid price is required';
-    if (!formData.quantity || formData.quantity < 0) newErrors.quantity = 'Valid quantity is required';
-    if (!formData.location) newErrors.location = 'Storage location is required';
+    // Title validation (min 2 chars, max 200)
+    if (!formData.titleAr.trim()) {
+      newErrors.titleAr = isArabic ? 'اسم المنتج مطلوب' : 'Product name is required';
+    } else if (formData.titleAr.trim().length < 2) {
+      newErrors.titleAr = isArabic ? 'اسم المنتج يجب أن يكون على الأقل حرفين' : 'Product name must be at least 2 characters';
+    } else if (formData.titleAr.trim().length > 200) {
+      newErrors.titleAr = isArabic ? 'اسم المنتج يجب أن يكون أقل من 200 حرف' : 'Product name must be less than 200 characters';
+    }
+    
+    // Price validation (positive, max 1M SAR)
+    const price = parseFloat(formData.priceSar);
+    if (!formData.priceSar || isNaN(price) || price <= 0) {
+      newErrors.priceSar = isArabic ? 'السعر مطلوب ويجب أن يكون أكبر من صفر' : 'Price is required and must be greater than 0';
+    } else if (price > 1000000) {
+      newErrors.priceSar = isArabic ? 'السعر يجب أن يكون أقل من مليون ريال' : 'Price must be less than 1,000,000 SAR';
+    }
+    
+    // Quantity validation (positive integer)
+    const quantity = parseInt(formData.quantity);
+    if (!formData.quantity || isNaN(quantity) || quantity < 1) {
+      newErrors.quantity = isArabic ? 'الكمية مطلوبة ويجب أن تكون على الأقل 1' : 'Quantity is required and must be at least 1';
+    }
+    
+    // City validation (min 2 chars, max 50)
+    if (!formData.city.trim()) {
+      newErrors.city = isArabic ? 'المدينة مطلوبة' : 'City is required';
+    } else if (formData.city.trim().length < 2) {
+      newErrors.city = isArabic ? 'المدينة يجب أن تكون على الأقل حرفين' : 'City must be at least 2 characters';
+    }
+
+    // Year validation (if provided)
+    if (formData.fromYear && formData.toYear) {
+      const fromYear = parseInt(formData.fromYear);
+      const toYear = parseInt(formData.toYear);
+      if (fromYear > toYear) {
+        newErrors.fromYear = isArabic ? 'سنة البداية لا يمكن أن تكون أكبر من سنة النهاية' : 'From year cannot be greater than to year';
+      }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!validateForm()) {
+      toast.error(isArabic ? 'يرجى تصحيح الأخطاء في النموذج' : 'Please fix the form errors');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Generate SKU if not provided
-      if (!formData.sku) {
-        const sku = `${formData.category?.toUpperCase().slice(0, 3)}-${Date.now().toString().slice(-6)}`;
-        formData.sku = sku;
+      // Prepare form data according to API schema
+      const submitData = {
+        titleAr: formData.titleAr.trim(),
+        titleEn: formData.titleEn?.trim() || undefined,
+        description: formData.description?.trim() || undefined,
+        descriptionEn: formData.descriptionEn?.trim() || undefined,
+        condition: formData.condition,
+        priceSar: Math.round(parseFloat(formData.priceSar) * 100), // Convert to halalas
+        originalPrice: formData.originalPrice ? Math.round(parseFloat(formData.originalPrice) * 100) : undefined,
+        quantity: Math.max(1, parseInt(formData.quantity) || 1), // Ensure positive quantity
+        minQuantity: Math.max(1, parseInt(formData.minQuantity) || 1),
+        weight: formData.weight ? parseFloat(formData.weight) : undefined,
+        make: formData.make?.trim() || undefined,
+        model: formData.model?.trim() || undefined,
+        fromYear: formData.fromYear ? parseInt(formData.fromYear) : undefined,
+        toYear: formData.toYear ? parseInt(formData.toYear) : undefined,
+        engineSize: formData.engineSize?.trim() || undefined,
+        fuelType: formData.fuelType === 'NOT_SPECIFIED' ? undefined : formData.fuelType || undefined,
+        transmission: formData.transmission === 'NOT_SPECIFIED' ? undefined : formData.transmission || undefined,
+        bodyType: formData.bodyType === 'NOT_SPECIFIED' ? undefined : formData.bodyType || undefined,
+        city: formData.city.trim(),
+        district: formData.district?.trim() || undefined,
+        oemNumbers: formData.oem_numbers ? formData.oem_numbers.split(',').map(s => s.trim()).filter(s => s) : undefined,
+      };
+
+      const response = await fetch('/api/listings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to create listing (${response.status})`);
       }
 
-      console.log('Submitting inventory item:', formData);
+      const result = await response.json();
       
-      // Redirect back to inventory list
-      router.push(`/${locale}/seller/inventory?success=Item added successfully`);
+      toast.success(isArabic ? 'تم إضافة المنتج بنجاح' : 'Product added successfully');
+      router.push(`/${locale}/seller/inventory`);
+      
     } catch (error) {
-      console.error('Error adding inventory item:', error);
+      console.error('Error creating listing:', error);
+      toast.error(error instanceof Error ? error.message : (isArabic ? 'حدث خطأ' : 'An error occurred'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
+  // Show loading while authenticating
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">
+            {isArabic ? 'جاري التحميل...' : 'Loading...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    
-    // Simulate file upload
-    imageFiles.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageUrl = e.target?.result as string;
-        setFormData(prev => ({
-          ...prev,
-          images: [...(prev.images || []), imageUrl]
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
-  };
+  // Don't render if not authenticated or not a seller
+  if (!isLoggedIn || user?.role !== 'SELLER' || !seller) {
+    return null;
+  }
 
-  const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images?.filter((_, i) => i !== index) || []
-    }));
-  };
-
-  const isArabic = locale === 'ar';
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-slate-200 dark:bg-slate-950/90 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+  // Check seller verification status (skip in development for testing)
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  if (!isDevelopment && (seller.status !== 'APPROVED' || !seller.verified)) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+        <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center gap-6">
               <Link href={`/${locale}/seller/inventory`}>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-                >
+                <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900 hover:bg-slate-100/80">
                   <ArrowLeft className="h-4 w-4 me-2" />
-                  {isArabic ? 'العودة للمخزون' : 'Back to Inventory'}
+                  {isArabic ? 'رجوع' : 'Back'}
                 </Button>
               </Link>
-              <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
               <div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                  {isArabic ? 'إضافة منتج جديد' : 'Add New Product'}
+                <h1 className="text-xl font-semibold text-slate-900">
+                  {isArabic ? 'منتج جديد' : 'New Product'}
                 </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {isArabic ? 'أضف منتجاً جديداً إلى مخزونك' : 'Add a new product to your inventory'}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="container mx-auto px-6 py-12">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-sm border border-orange-200/60 p-8 text-center">
+              <div className="mb-6">
+                <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+                <h2 className="text-lg font-semibold text-slate-900 mb-2">
+                  {isArabic ? 'الحساب قيد المراجعة' : 'Account Under Review'}
+                </h2>
+                <p className="text-slate-600">
+                  {isArabic 
+                    ? 'حسابك كبائع قيد المراجعة حالياً. لا يمكنك إضافة منتجات جديدة حتى يتم الموافقة على حسابك.'
+                    : 'Your seller account is currently under review. You cannot add new products until your account is approved.'
+                  }
+                </p>
+              </div>
+              <div className="bg-orange-50 rounded-xl p-4 mb-6">
+                <p className="text-sm text-orange-800">
+                  {isArabic
+                    ? 'ستتلقى إشعاراً عبر البريد الإلكتروني فور الموافقة على حسابك.'
+                    : 'You will receive an email notification once your account is approved.'
+                  }
+                </p>
+              </div>
+              <Link href={`/${locale}/seller/dashboard`}>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl">
+                  {isArabic ? 'العودة للوحة التحكم' : 'Back to Dashboard'}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ErrorBoundary fallback={SellerErrorFallback}>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+        {/* Minimal Header */}
+        <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 sticky top-0 z-40">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center gap-6">
+              <Link href={`/${locale}/seller/inventory`}>
+                <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-900 hover:bg-slate-100/80">
+                  <ArrowLeft className="h-4 w-4 me-2" />
+                  {isArabic ? 'رجوع' : 'Back'}
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-xl font-semibold text-slate-900">
+                  {isArabic ? 'منتج جديد' : 'New Product'}
+                </h1>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  {isArabic ? 'إضافة قطعة غيار جديدة' : 'Add a new spare part'}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setPreviewMode(!previewMode)}
-                className="border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-              >
-                <Eye className="h-4 w-4 me-2" />
-                {previewMode 
-                  ? (isArabic ? 'إخفاء المعاينة' : 'Hide Preview')
-                  : (isArabic ? 'معاينة' : 'Preview')
-                }
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="bg-saudi-green hover:bg-saudi-green/90 text-white shadow-lg"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white me-2" />
-                    {isArabic ? 'جاري الحفظ...' : 'Saving...'}
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 me-2" />
-                    {isArabic ? 'حفظ المنتج' : 'Save Product'}
-                  </>
-                )}
-              </Button>
-            </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Form */}
-          <div className="lg:col-span-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                <TabsTrigger value="basic" className="data-[state=active]:bg-saudi-green data-[state=active]:text-white">
-                  {isArabic ? 'أساسي' : 'Basic'}
-                </TabsTrigger>
-                <TabsTrigger value="details" className="data-[state=active]:bg-saudi-green data-[state=active]:text-white">
-                  {isArabic ? 'تفاصيل' : 'Details'}
-                </TabsTrigger>
-                <TabsTrigger value="images" className="data-[state=active]:bg-saudi-green data-[state=active]:text-white">
-                  {isArabic ? 'صور' : 'Images'}
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="data-[state=active]:bg-saudi-green data-[state=active]:text-white">
-                  {isArabic ? 'إعدادات' : 'Settings'}
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Basic Information */}
-              <TabsContent value="basic" className="space-y-6">
-                <Card className="border-slate-200 dark:border-slate-700 shadow-sm">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
-                      <Package className="h-5 w-5 text-saudi-green" />
-                      {isArabic ? 'معلومات المنتج الأساسية' : 'Basic Product Information'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="md:col-span-2">
-                        <Label htmlFor="name" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'اسم المنتج *' : 'Product Name *'}
-                        </Label>
-                        <Input
-                          id="name"
-                          value={formData.name}
-                          onChange={(e) => handleInputChange('name', e.target.value)}
-                          className={cn(
-                            "mt-1",
-                            errors.name ? "border-red-300 focus:ring-red-500" : "border-slate-200 dark:border-slate-700"
-                          )}
-                          placeholder={isArabic ? 'أدخل اسم المنتج' : 'Enter product name'}
-                        />
-                        {errors.name && (
-                          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            {errors.name}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <Label htmlFor="description" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'الوصف *' : 'Description *'}
-                        </Label>
-                        <Textarea
-                          id="description"
-                          value={formData.description}
-                          onChange={(e) => handleInputChange('description', e.target.value)}
-                          className={cn(
-                            "mt-1 min-h-[100px]",
-                            errors.description ? "border-red-300 focus:ring-red-500" : "border-slate-200 dark:border-slate-700"
-                          )}
-                          placeholder={isArabic ? 'وصف تفصيلي للمنتج' : 'Detailed product description'}
-                        />
-                        {errors.description && (
-                          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            {errors.description}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="category" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'الفئة *' : 'Category *'}
-                        </Label>
-                        <Select
-                          value={formData.category}
-                          onValueChange={(value) => handleInputChange('category', value)}
-                        >
-                          <SelectTrigger className={cn(
-                            "mt-1",
-                            errors.category ? "border-red-300 focus:ring-red-500" : "border-slate-200 dark:border-slate-700"
-                          )}>
-                            <SelectValue placeholder={isArabic ? 'اختر الفئة' : 'Select category'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories.map((category) => {
-                              const IconComponent = category.icon;
-                              return (
-                                <SelectItem key={category.value} value={category.value}>
-                                  <div className="flex items-center gap-2">
-                                    <IconComponent className="h-4 w-4" />
-                                    {category.label}
-                                  </div>
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                        {errors.category && (
-                          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            {errors.category}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="condition" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'الحالة' : 'Condition'}
-                        </Label>
-                        <Select
-                          value={formData.condition}
-                          onValueChange={(value: 'new' | 'used' | 'refurbished') => handleInputChange('condition', value)}
-                        >
-                          <SelectTrigger className="mt-1 border-slate-200 dark:border-slate-700">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {conditions.map((condition) => (
-                              <SelectItem key={condition.value} value={condition.value}>
-                                <div className="flex items-center gap-2">
-                                  <Badge className={cn("text-xs", condition.color)}>
-                                    {condition.label}
-                                  </Badge>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="price" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'السعر *' : 'Price *'} 
-                          <SARSymbol className="h-3 w-3 ms-1" />
-                        </Label>
-                        <Input
-                          id="price"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={formData.price || ''}
-                          onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
-                          className={cn(
-                            "mt-1",
-                            errors.price ? "border-red-300 focus:ring-red-500" : "border-slate-200 dark:border-slate-700"
-                          )}
-                          placeholder="0.00"
-                        />
-                        {errors.price && (
-                          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            {errors.price}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="costPrice" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'سعر التكلفة' : 'Cost Price'} 
-                          <SARSymbol className="h-3 w-3 ms-1" />
-                        </Label>
-                        <Input
-                          id="costPrice"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={formData.costPrice || ''}
-                          onChange={(e) => handleInputChange('costPrice', parseFloat(e.target.value) || 0)}
-                          className="mt-1 border-slate-200 dark:border-slate-700"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Product Details */}
-              <TabsContent value="details" className="space-y-6">
-                <Card className="border-slate-200 dark:border-slate-700 shadow-sm">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
-                      <Tag className="h-5 w-5 text-saudi-green" />
-                      {isArabic ? 'تفاصيل المنتج' : 'Product Details'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <Label htmlFor="oemNumber" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'رقم OEM' : 'OEM Number'}
-                        </Label>
-                        <Input
-                          id="oemNumber"
-                          value={formData.oemNumber}
-                          onChange={(e) => handleInputChange('oemNumber', e.target.value)}
-                          className="mt-1 border-slate-200 dark:border-slate-700"
-                          placeholder={isArabic ? 'رقم القطعة الأصلي' : 'Original part number'}
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="sku" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'رمز المنتج (SKU)' : 'SKU Code'}
-                        </Label>
-                        <Input
-                          id="sku"
-                          value={formData.sku}
-                          onChange={(e) => handleInputChange('sku', e.target.value)}
-                          className="mt-1 border-slate-200 dark:border-slate-700"
-                          placeholder={isArabic ? 'سيتم إنشاؤه تلقائياً' : 'Auto-generated if empty'}
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="brand" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'الماركة' : 'Brand'}
-                        </Label>
-                        <Input
-                          id="brand"
-                          value={formData.brand}
-                          onChange={(e) => handleInputChange('brand', e.target.value)}
-                          className="mt-1 border-slate-200 dark:border-slate-700"
-                          placeholder={isArabic ? 'ماركة السيارة' : 'Vehicle brand'}
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="model" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'الموديل' : 'Model'}
-                        </Label>
-                        <Input
-                          id="model"
-                          value={formData.model}
-                          onChange={(e) => handleInputChange('model', e.target.value)}
-                          className="mt-1 border-slate-200 dark:border-slate-700"
-                          placeholder={isArabic ? 'موديل السيارة' : 'Vehicle model'}
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="year" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'السنة' : 'Year'}
-                        </Label>
-                        <Input
-                          id="year"
-                          value={formData.year}
-                          onChange={(e) => handleInputChange('year', e.target.value)}
-                          className="mt-1 border-slate-200 dark:border-slate-700"
-                          placeholder={isArabic ? 'سنة الصنع' : 'Manufacturing year'}
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="weight" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'الوزن (كيلو)' : 'Weight (kg)'}
-                        </Label>
-                        <Input
-                          id="weight"
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          value={formData.weight || ''}
-                          onChange={(e) => handleInputChange('weight', parseFloat(e.target.value) || 0)}
-                          className="mt-1 border-slate-200 dark:border-slate-700"
-                          placeholder="0.0"
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <Label className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'الأبعاد (سم)' : 'Dimensions (cm)'}
-                        </Label>
-                        <div className="grid grid-cols-3 gap-3 mt-1">
-                          <div>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={formData.dimensions?.length || ''}
-                              onChange={(e) => handleDimensionChange('length', parseFloat(e.target.value) || 0)}
-                              className="border-slate-200 dark:border-slate-700"
-                              placeholder={isArabic ? 'الطول' : 'Length'}
-                            />
-                          </div>
-                          <div>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={formData.dimensions?.width || ''}
-                              onChange={(e) => handleDimensionChange('width', parseFloat(e.target.value) || 0)}
-                              className="border-slate-200 dark:border-slate-700"
-                              placeholder={isArabic ? 'العرض' : 'Width'}
-                            />
-                          </div>
-                          <div>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={formData.dimensions?.height || ''}
-                              onChange={(e) => handleDimensionChange('height', parseFloat(e.target.value) || 0)}
-                              className="border-slate-200 dark:border-slate-700"
-                              placeholder={isArabic ? 'الارتفاع' : 'Height'}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="warranty" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'الضمان (شهور)' : 'Warranty (months)'}
-                        </Label>
-                        <Input
-                          id="warranty"
-                          type="number"
-                          min="0"
-                          value={formData.warranty || ''}
-                          onChange={(e) => handleInputChange('warranty', parseInt(e.target.value) || 0)}
-                          className="mt-1 border-slate-200 dark:border-slate-700"
-                          placeholder="0"
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="supplier" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'المورد' : 'Supplier'}
-                        </Label>
-                        <Select
-                          value={formData.supplier}
-                          onValueChange={(value) => handleInputChange('supplier', value)}
-                        >
-                          <SelectTrigger className="mt-1 border-slate-200 dark:border-slate-700">
-                            <SelectValue placeholder={isArabic ? 'اختر المورد' : 'Select supplier'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {suppliers.map((supplier) => (
-                              <SelectItem key={supplier} value={supplier}>
-                                {supplier}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    {/* Tags */}
-                    <div>
-                      <Label className="text-slate-700 dark:text-slate-300">
-                        {isArabic ? 'الكلمات المفتاحية' : 'Tags'}
-                      </Label>
-                      <div className="mt-2 space-y-3">
-                        <div className="flex gap-2">
-                          <Input
-                            value={newTag}
-                            onChange={(e) => setNewTag(e.target.value)}
-                            className="border-slate-200 dark:border-slate-700"
-                            placeholder={isArabic ? 'أضف كلمة مفتاحية' : 'Add a tag'}
-                            onKeyPress={(e) => e.key === 'Enter' && addTag()}
-                          />
-                          <Button
-                            type="button"
-                            onClick={addTag}
-                            size="sm"
-                            className="bg-saudi-green hover:bg-saudi-green/90"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        {formData.tags && formData.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {formData.tags.map((tag, index) => (
-                              <Badge
-                                key={index}
-                                variant="secondary"
-                                className="bg-saudi-green/10 text-saudi-green border border-saudi-green/20"
-                              >
-                                {tag}
-                                <button
-                                  onClick={() => removeTag(tag)}
-                                  className="ms-1 hover:text-red-500"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Images */}
-              <TabsContent value="images" className="space-y-6">
-                <Card className="border-slate-200 dark:border-slate-700 shadow-sm">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
-                      <Camera className="h-5 w-5 text-saudi-green" />
-                      {isArabic ? 'صور المنتج' : 'Product Images'}
-                    </CardTitle>
-                    <CardDescription>
-                      {isArabic 
-                        ? 'أضف صوراً واضحة وعالية الجودة للمنتج. الصورة الأولى ستكون الصورة الرئيسية.'
-                        : 'Add clear, high-quality images of your product. The first image will be the main display image.'
-                      }
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Upload Area */}
-                    <div
+        {/* Centered Form Container */}
+        <div className="container mx-auto px-6 py-12">
+          <div className="max-w-2xl mx-auto">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              
+              {/* Essential Information */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8">
+                <div className="mb-8">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-2">
+                    {isArabic ? 'المعلومات الأساسية' : 'Essential Information'}
+                  </h2>
+                  <p className="text-sm text-slate-500">
+                    {isArabic ? 'المعلومات المطلوبة للمنتج' : 'Required product details'}
+                  </p>
+                </div>
+                <div className="space-y-6">
+                  <div>
+                    <Label htmlFor="titleAr" className="text-slate-700 font-medium mb-3 block">
+                      {isArabic ? 'اسم القطعة' : 'Part Name'} <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="titleAr"
+                      value={formData.titleAr}
+                      onChange={(e) => handleInputChange('titleAr', e.target.value)}
                       className={cn(
-                        "relative border-2 border-dashed rounded-lg p-8 text-center transition-colors",
-                        dragActive 
-                          ? "border-saudi-green bg-saudi-green/5"
-                          : "border-slate-300 hover:border-saudi-green hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                        "border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400",
+                        errors.titleAr && "border-red-300 focus:border-red-400 focus:ring-red-400/20"
                       )}
-                      onDragEnter={handleDrag}
-                      onDragLeave={handleDrag}
-                      onDragOver={handleDrag}
-                      onDrop={handleDrop}
-                    >
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        onChange={(e) => {
-                          const files = Array.from(e.target.files || []);
-                          files.forEach(file => {
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                              const imageUrl = e.target?.result as string;
-                              setFormData(prev => ({
-                                ...prev,
-                                images: [...(prev.images || []), imageUrl]
-                              }));
-                            };
-                            reader.readAsDataURL(file);
-                          });
-                        }}
-                      />
-                      <Upload className="h-10 w-10 mx-auto text-slate-400 mb-4" />
-                      <div className="space-y-2">
-                        <p className="text-lg font-medium text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'اسحب وأفلت الصور هنا' : 'Drag and drop images here'}
-                        </p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          {isArabic ? 'أو انقر لتحديد الملفات' : 'or click to select files'}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          {isArabic ? 'PNG, JPG, JPEG حتى 10MB' : 'PNG, JPG, JPEG up to 10MB'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Image Grid */}
-                    {formData.images && formData.images.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {formData.images.map((image, index) => (
-                          <div key={index} className="relative group">
-                            <div className="aspect-square rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800">
-                              <img
-                                src={image}
-                                alt={`Product ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            {index === 0 && (
-                              <Badge className="absolute top-2 start-2 bg-saudi-green text-white">
-                                {isArabic ? 'رئيسية' : 'Main'}
-                              </Badge>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="absolute top-2 end-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => removeImage(index)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
+                      placeholder={isArabic ? 'مثال: فرامل أمامية تويوتا كامري' : 'e.g., Toyota Camry Front Brake Pads'}
+                    />
+                    {errors.titleAr && (
+                      <p className="text-sm text-red-600 flex items-center gap-1 mt-2">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.titleAr}
+                      </p>
                     )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                  </div>
 
-              {/* Settings */}
-              <TabsContent value="settings" className="space-y-6">
-                <Card className="border-slate-200 dark:border-slate-700 shadow-sm">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
-                      <MapPin className="h-5 w-5 text-saudi-green" />
-                      {isArabic ? 'إعدادات المخزون' : 'Inventory Settings'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <Label htmlFor="quantity" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'الكمية الحالية *' : 'Current Quantity *'}
-                        </Label>
-                        <Input
-                          id="quantity"
-                          type="number"
-                          min="0"
-                          value={formData.quantity || ''}
-                          onChange={(e) => handleInputChange('quantity', parseInt(e.target.value) || 0)}
-                          className={cn(
-                            "mt-1",
-                            errors.quantity ? "border-red-300 focus:ring-red-500" : "border-slate-200 dark:border-slate-700"
-                          )}
-                          placeholder="0"
-                        />
-                        {errors.quantity && (
-                          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            {errors.quantity}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="minQuantity" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'الحد الأدنى للكمية' : 'Minimum Quantity Alert'}
-                        </Label>
-                        <Input
-                          id="minQuantity"
-                          type="number"
-                          min="0"
-                          value={formData.minQuantity || ''}
-                          onChange={(e) => handleInputChange('minQuantity', parseInt(e.target.value) || 0)}
-                          className="mt-1 border-slate-200 dark:border-slate-700"
-                          placeholder="1"
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <Label htmlFor="location" className="text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'موقع التخزين *' : 'Storage Location *'}
-                        </Label>
-                        <Select
-                          value={formData.location}
-                          onValueChange={(value) => handleInputChange('location', value)}
-                        >
-                          <SelectTrigger className={cn(
-                            "mt-1",
-                            errors.location ? "border-red-300 focus:ring-red-500" : "border-slate-200 dark:border-slate-700"
-                          )}>
-                            <SelectValue placeholder={isArabic ? 'اختر موقع التخزين' : 'Select storage location'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {locations.map((location) => (
-                              <SelectItem key={location} value={location}>
-                                <div className="flex items-center gap-2">
-                                  <MapPin className="h-4 w-4" />
-                                  {location}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {errors.location && (
-                          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            {errors.location}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Status Settings */}
-                    <div className="space-y-4 pt-6 border-t border-slate-200 dark:border-slate-700">
-                      <h4 className="font-medium text-slate-900 dark:text-white">
-                        {isArabic ? 'حالة المنتج' : 'Product Status'}
-                      </h4>
-                      
-                      <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                        <Checkbox
-                          id="isActive"
-                          checked={formData.isActive}
-                          onCheckedChange={(checked) => handleInputChange('isActive', checked)}
-                        />
-                        <Label htmlFor="isActive" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          {isArabic ? 'منتج نشط (مرئي للعملاء)' : 'Active Product (visible to customers)'}
-                        </Label>
-                      </div>
-
-                      <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                        <Checkbox
-                          id="isFeatured"
-                          checked={formData.isFeatured}
-                          onCheckedChange={(checked) => handleInputChange('isFeatured', checked)}
-                        />
-                        <Label htmlFor="isFeatured" className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                          <Sparkles className="h-3 w-3" />
-                          {isArabic ? 'منتج مميز' : 'Featured Product'}
-                        </Label>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Preview Sidebar */}
-          {previewMode && (
-            <div className="lg:col-span-1">
-              <div className="sticky top-24">
-                <Card className="border-slate-200 dark:border-slate-700 shadow-sm">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-slate-900 dark:text-white">
-                      {isArabic ? 'معاينة المنتج' : 'Product Preview'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Product Image */}
-                    <div className="aspect-square rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800">
-                      {formData.images && formData.images.length > 0 ? (
-                        <img
-                          src={formData.images[0]}
-                          alt="Product Preview"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <ImagePlaceholder className="w-full h-full" type="part" />
-                      )}
-                    </div>
-
-                    {/* Product Info */}
-                    <div className="space-y-3">
-                      <div>
-                        <h3 className="font-medium text-slate-900 dark:text-white line-clamp-2">
-                          {formData.name || (isArabic ? 'اسم المنتج' : 'Product Name')}
-                        </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-3">
-                          {formData.description || (isArabic ? 'وصف المنتج...' : 'Product description...')}
-                        </p>
-                      </div>
-
-                      {formData.condition && (
-                        <Badge className={conditions.find(c => c.value === formData.condition)?.color || 'bg-gray-100'}>
-                          {conditions.find(c => c.value === formData.condition)?.label}
-                        </Badge>
-                      )}
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                          <SARSymbol className="h-4 w-4" />
-                          <span className="text-lg font-bold text-saudi-green">
-                            {formData.price?.toFixed(2) || '0.00'}
-                          </span>
-                        </div>
-                        {formData.quantity !== undefined && (
-                          <Badge variant="outline" className="text-xs">
-                            {isArabic ? `${formData.quantity} متوفر` : `${formData.quantity} in stock`}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {formData.tags && formData.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {formData.tags.slice(0, 3).map((tag, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="condition" className="text-slate-700 font-medium mb-3 block">
+                        {isArabic ? 'الحالة' : 'Condition'} <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        value={formData.condition}
+                        onValueChange={(value: 'NEW' | 'USED' | 'REFURBISHED') => handleInputChange('condition', value)}
+                      >
+                        <SelectTrigger className="border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl px-4 py-3 h-12">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {conditions.map((condition) => (
+                            <SelectItem key={condition.value} value={condition.value} className="rounded-lg">
+                              {isArabic ? condition.labelAr : condition.labelEn}
+                            </SelectItem>
                           ))}
-                          {formData.tags.length > 3 && (
-                            <Badge variant="secondary" className="text-xs">
-                              +{formData.tags.length - 3}
-                            </Badge>
-                          )}
-                        </div>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="city" className="text-slate-700 font-medium mb-3 block">
+                        {isArabic ? 'المدينة' : 'City'} <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        value={formData.city}
+                        onValueChange={(value) => handleInputChange('city', value)}
+                      >
+                        <SelectTrigger className={cn(
+                          "border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl px-4 py-3 h-12",
+                          errors.city && "border-red-300 focus:border-red-400 focus:ring-red-400/20"
+                        )}>
+                          <SelectValue placeholder={isArabic ? 'اختر المدينة' : 'Select city'} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {saudiCities.map((city) => (
+                            <SelectItem key={city.value} value={city.value} className="rounded-lg">
+                              {isArabic ? city.labelAr : city.labelEn}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.city && (
+                        <p className="text-sm text-red-600 flex items-center gap-1 mt-2">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.city}
+                        </p>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="description" className="text-slate-700 font-medium mb-3 block">
+                      {isArabic ? 'وصف المنتج' : 'Product Description'}
+                    </Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      className="border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400 min-h-[120px] resize-none"
+                      placeholder={isArabic ? 'أضف وصفاً مفصلاً للقطعة...' : 'Add a detailed description of the part...'}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+
+              {/* Pricing & Inventory */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8">
+                <div className="mb-8">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-2">
+                    {isArabic ? 'السعر والكمية' : 'Price & Quantity'}
+                  </h2>
+                  <p className="text-sm text-slate-500">
+                    {isArabic ? 'تفاصيل البيع والمخزون' : 'Sales and inventory details'}
+                  </p>
+                </div>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="priceSar" className="text-slate-700 font-medium mb-3 flex items-center gap-2">
+                        {isArabic ? 'السعر' : 'Price'} <span className="text-red-500">*</span>
+                        <SARSymbol className="h-4 w-4 text-slate-400" />
+                      </Label>
+                      <Input
+                        id="priceSar"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.priceSar}
+                        onChange={(e) => handleInputChange('priceSar', e.target.value)}
+                        className={cn(
+                          "border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400",
+                          errors.priceSar && "border-red-300 focus:border-red-400 focus:ring-red-400/20"
+                        )}
+                        placeholder="0.00"
+                      />
+                      {errors.priceSar && (
+                        <p className="text-sm text-red-600 flex items-center gap-1 mt-2">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.priceSar}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="quantity" className="text-slate-700 font-medium mb-3 block">
+                        {isArabic ? 'الكمية' : 'Quantity'} <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="quantity"
+                        type="number"
+                        min="0"
+                        value={formData.quantity}
+                        onChange={(e) => handleInputChange('quantity', e.target.value)}
+                        className={cn(
+                          "border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400",
+                          errors.quantity && "border-red-300 focus:border-red-400 focus:ring-red-400/20"
+                        )}
+                        placeholder="1"
+                      />
+                      {errors.quantity && (
+                        <p className="text-sm text-red-600 flex items-center gap-1 mt-2">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.quantity}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="oem_numbers" className="text-slate-700 font-medium mb-3 block">
+                      {isArabic ? 'أرقام القطعة الأصلية' : 'OEM Part Numbers'}
+                    </Label>
+                    <Input
+                      id="oem_numbers"
+                      value={formData.oem_numbers}
+                      onChange={(e) => handleInputChange('oem_numbers', e.target.value)}
+                      className="border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400"
+                      placeholder={isArabic ? '12345, ABC123, XYZ789' : '12345, ABC123, XYZ789'}
+                    />
+                    <p className="text-xs text-slate-500 mt-2">
+                      {isArabic ? 'افصل الأرقام بفواصل إذا كان لديك أرقام متعددة' : 'Separate multiple numbers with commas'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vehicle Compatibility */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8">
+                <div className="mb-8">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-2">
+                    {isArabic ? 'توافق المركبة' : 'Vehicle Compatibility'}
+                  </h2>
+                  <p className="text-sm text-slate-500">
+                    {isArabic ? 'المركبات المتوافقة مع هذه القطعة' : 'Vehicles compatible with this part'}
+                  </p>
+                </div>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="make" className="text-slate-700 font-medium mb-3 block">
+                        {isArabic ? 'الماركة' : 'Brand'}
+                      </Label>
+                      <Input
+                        id="make"
+                        value={formData.make}
+                        onChange={(e) => handleInputChange('make', e.target.value)}
+                        className="border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400"
+                        placeholder={isArabic ? 'تويوتا' : 'Toyota'}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="model" className="text-slate-700 font-medium mb-3 block">
+                        {isArabic ? 'الموديل' : 'Model'}
+                      </Label>
+                      <Input
+                        id="model"
+                        value={formData.model}
+                        onChange={(e) => handleInputChange('model', e.target.value)}
+                        className="border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400"
+                        placeholder={isArabic ? 'كامري' : 'Camry'}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="fromYear" className="text-slate-700 font-medium mb-3 block">
+                        {isArabic ? 'من سنة' : 'From Year'}
+                      </Label>
+                      <Input
+                        id="fromYear"
+                        type="number"
+                        min="1900"
+                        max={new Date().getFullYear() + 1}
+                        value={formData.fromYear}
+                        onChange={(e) => handleInputChange('fromYear', e.target.value)}
+                        className="border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400"
+                        placeholder="2018"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="toYear" className="text-slate-700 font-medium mb-3 block">
+                        {isArabic ? 'إلى سنة' : 'To Year'}
+                      </Label>
+                      <Input
+                        id="toYear"
+                        type="number"
+                        min="1900"
+                        max={new Date().getFullYear() + 1}
+                        value={formData.toYear}
+                        onChange={(e) => handleInputChange('toYear', e.target.value)}
+                        className="border-slate-200 focus:border-blue-400 focus:ring-blue-400/20 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400"
+                        placeholder="2024"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between pt-8 border-t border-slate-200">
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  onClick={() => router.back()}
+                  className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 px-8 py-3 rounded-xl"
+                >
+                  {isArabic ? 'إلغاء' : 'Cancel'}
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting} 
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl shadow-sm min-w-[140px] font-medium"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin me-2" />
+                      {isArabic ? 'جاري الحفظ...' : 'Saving...'}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 me-2" />
+                      {isArabic ? 'إضافة المنتج' : 'Add Product'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }

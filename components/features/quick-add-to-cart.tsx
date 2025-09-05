@@ -20,7 +20,7 @@ interface QuickAddToCartProps {
     city: string;
     seller: {
       id: string;
-      yardName: string;
+      businessName: string;
     };
     photos?: { url: string }[];
   };
@@ -59,7 +59,7 @@ export function QuickAddToCart({ listing, className, size = 'default', variant =
       condition: listing.condition,
       city: listing.city,
       sellerId: listing.seller.id,
-      sellerName: listing.seller.yardName,
+      sellerName: listing.seller.businessName,
       image: listing.photos?.[0]?.url,
     });
     

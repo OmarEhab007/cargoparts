@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { SARSymbol } from '@/components/ui/currency-symbol';
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  AreaChart, Area, BarChart, Bar, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   ComposedChart, Line
@@ -22,21 +24,7 @@ import {
   Zap, Award, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 
-// Revenue trend data
-const revenueData = [
-  { month: 'Jan', revenue: 45000, orders: 120, avgOrderValue: 375 },
-  { month: 'Feb', revenue: 52000, orders: 145, avgOrderValue: 358 },
-  { month: 'Mar', revenue: 48000, orders: 130, avgOrderValue: 369 },
-  { month: 'Apr', revenue: 61000, orders: 175, avgOrderValue: 348 },
-  { month: 'May', revenue: 58000, orders: 160, avgOrderValue: 362 },
-  { month: 'Jun', revenue: 72000, orders: 200, avgOrderValue: 360 },
-  { month: 'Jul', revenue: 68000, orders: 185, avgOrderValue: 367 },
-  { month: 'Aug', revenue: 75000, orders: 210, avgOrderValue: 357 },
-  { month: 'Sep', revenue: 82000, orders: 225, avgOrderValue: 364 },
-  { month: 'Oct', revenue: 79000, orders: 215, avgOrderValue: 367 },
-  { month: 'Nov', revenue: 86000, orders: 240, avgOrderValue: 358 },
-  { month: 'Dec', revenue: 92000, orders: 260, avgOrderValue: 353 },
-];
+// Note: revenueData removed - using API data instead
 
 // Product performance data
 const productPerformance = [
@@ -73,14 +61,7 @@ const conversionFunnel = [
   { stage: 'Purchase', value: 1200, fill: '#c084fc' },
 ];
 
-// Geographic distribution
-const geographicData = [
-  { city: 'Riyadh', sales: 35, revenue: 320000 },
-  { city: 'Jeddah', sales: 28, revenue: 250000 },
-  { city: 'Dammam', sales: 15, revenue: 140000 },
-  { city: 'Mecca', sales: 12, revenue: 110000 },
-  { city: 'Medina', sales: 10, revenue: 90000 },
-];
+// Note: geographicData removed - can be added later if needed
 
 // Performance metrics radar
 const performanceMetrics = [
@@ -92,23 +73,168 @@ const performanceMetrics = [
   { metric: 'Inventory Turnover', current: 82, target: 85 },
 ];
 
+interface AnalyticsData {
+  overview: {
+    totalViews: number;
+    totalInquiries: number;
+    totalOrders: number;
+    totalRevenue: number;
+    totalNewListings: number;
+    activeListings: number;
+    averageRating: number;
+    totalReviews: number;
+    totalSales: number;
+    isVerified: boolean;
+  };
+  growth: {
+    viewsGrowth: number;
+    inquiriesGrowth: number;
+    ordersGrowth: number;
+    revenueGrowth: number;
+  };
+  chartData: Array<{
+    date: string;
+    views: number;
+    inquiries: number;
+    orders: number;
+    revenue: number;
+  }>;
+  topListings: Array<{
+    id: string;
+    title: string;
+    titleEn: string | null;
+    views: number;
+    price: number;
+    image: string | null;
+  }>;
+  period: {
+    startDate: string;
+    endDate: string;
+    period: string;
+  };
+}
+
 export default function SellerAnalyticsPage() {
   const locale = useLocale();
+  const router = useRouter();
   const isArabic = locale === 'ar';
-  const [timeRange, setTimeRange] = useState('month');
-  // const [selectedMetric, setSelectedMetric] = useState('revenue'); // Reserved for future use
-  const [isLoading, setIsLoading] = useState(false);
+  const { user, seller } = useAuth();
+  const [timeRange, setTimeRange] = useState('30d');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  
+  // TEMPORARY: Skip authentication check for development
+  // useEffect(() => {
+  //   if (!user || user.role !== 'SELLER') {
+  //     router.push(`/${locale}/auth`);
+  //     return;
+  //   }
+  //   if (!seller) {
+  //     router.push(`/${locale}/seller/setup`);
+  //     return;
+  //   }
+  // }, [user, seller, router, locale]);
+
+  // Fetch analytics data
+  useEffect(() => {
+    // TEMPORARY: Use dummy seller ID for development
+    const sellerId = 'dummy-seller-1';
+    
+    const fetchAnalytics = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const params = new URLSearchParams({
+          period: timeRange,
+        });
+        
+        const response = await fetch(`/api/sellers/${sellerId}/analytics?${params.toString()}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch analytics data');
+        }
+        
+        const data = await response.json();
+        setAnalyticsData(data.data);
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+        setError('Failed to load analytics data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchAnalytics();
+  }, ['dummy-seller-1', timeRange]);
 
   const refreshData = () => {
-    setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 1000);
+    if (seller?.id) {
+      const fetchAnalytics = async () => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+          const params = new URLSearchParams({ period: timeRange });
+          const response = await fetch(`/api/sellers/${sellerId}/analytics?${params.toString()}`);
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch analytics data');
+          }
+          
+          const data = await response.json();
+          setAnalyticsData(data.data);
+        } catch (error) {
+          console.error('Error fetching analytics:', error);
+          setError('Failed to load analytics data');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchAnalytics();
+    }
   };
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString(isArabic ? 'ar-SA' : 'en-US');
   };
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  // Note: COLORS constant removed - using inline colors instead
+
+  // Loading state
+  if (isLoading && !analyticsData) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">
+              {isArabic ? 'جاري تحميل التحليلات...' : 'Loading analytics...'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-600">{error}</p>
+          <Button 
+            onClick={refreshData} 
+            className="mt-2"
+            variant="outline"
+          >
+            {isArabic ? 'إعادة المحاولة' : 'Retry'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -128,10 +254,10 @@ export default function SellerAnalyticsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="week">{isArabic ? 'أسبوع' : 'Week'}</SelectItem>
-              <SelectItem value="month">{isArabic ? 'شهر' : 'Month'}</SelectItem>
-              <SelectItem value="quarter">{isArabic ? 'ربع سنة' : 'Quarter'}</SelectItem>
-              <SelectItem value="year">{isArabic ? 'سنة' : 'Year'}</SelectItem>
+              <SelectItem value="7d">{isArabic ? 'أسبوع' : '7 Days'}</SelectItem>
+              <SelectItem value="30d">{isArabic ? 'شهر' : '30 Days'}</SelectItem>
+              <SelectItem value="90d">{isArabic ? 'ربع سنة' : '90 Days'}</SelectItem>
+              <SelectItem value="1y">{isArabic ? 'سنة' : '1 Year'}</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" size="icon" onClick={refreshData} disabled={isLoading}>
@@ -145,93 +271,117 @@ export default function SellerAnalyticsPage() {
       </div>
 
       {/* Key Metrics Overview */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {isArabic ? 'إجمالي الإيرادات' : 'Total Revenue'}
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold flex items-center gap-1">
-              {formatCurrency(748000)}
-              <SARSymbol className="h-5 w-5" />
-            </div>
-            <div className="flex items-center mt-2">
-              <TrendingUp className="h-4 w-4 text-green-500 me-1" />
-              <span className="text-sm text-green-500">+12.5%</span>
-              <span className="text-sm text-muted-foreground ms-2">
-                {isArabic ? 'من الشهر الماضي' : 'from last month'}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+      {analyticsData && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {isArabic ? 'إجمالي الإيرادات' : 'Total Revenue'}
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold flex items-center gap-1">
+                {formatCurrency(analyticsData.overview.totalRevenue)}
+                <SARSymbol className="h-5 w-5" />
+              </div>
+              <div className="flex items-center mt-2">
+                {analyticsData.growth.revenueGrowth >= 0 ? (
+                  <TrendingUp className="h-4 w-4 text-green-500 me-1" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-red-500 me-1" />
+                )}
+                <span className={`text-sm ${analyticsData.growth.revenueGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {analyticsData.growth.revenueGrowth >= 0 ? '+' : ''}{analyticsData.growth.revenueGrowth}%
+                </span>
+                <span className="text-sm text-muted-foreground ms-2">
+                  {isArabic ? 'من الفترة السابقة' : 'from previous period'}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {isArabic ? 'معدل التحويل' : 'Conversion Rate'}
-            </CardTitle>
-            <MousePointer className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12.8%</div>
-            <div className="flex items-center mt-2">
-              <TrendingUp className="h-4 w-4 text-green-500 me-1" />
-              <span className="text-sm text-green-500">+2.3%</span>
-              <span className="text-sm text-muted-foreground ms-2">
-                {isArabic ? 'تحسن' : 'improvement'}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {isArabic ? 'إجمالي المشاهدات' : 'Total Views'}
+              </CardTitle>
+              <MousePointer className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analyticsData.overview.totalViews.toLocaleString()}</div>
+              <div className="flex items-center mt-2">
+                {analyticsData.growth.viewsGrowth >= 0 ? (
+                  <TrendingUp className="h-4 w-4 text-green-500 me-1" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-red-500 me-1" />
+                )}
+                <span className={`text-sm ${analyticsData.growth.viewsGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {analyticsData.growth.viewsGrowth >= 0 ? '+' : ''}{analyticsData.growth.viewsGrowth}%
+                </span>
+                <span className="text-sm text-muted-foreground ms-2">
+                  {isArabic ? 'تحسن' : 'change'}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {isArabic ? 'متوسط قيمة الطلب' : 'Average Order Value'}
-            </CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold flex items-center gap-1">
-              {formatCurrency(365)}
-              <SARSymbol className="h-5 w-5" />
-            </div>
-            <div className="flex items-center mt-2">
-              <TrendingDown className="h-4 w-4 text-red-500 me-1" />
-              <span className="text-sm text-red-500">-3.2%</span>
-              <span className="text-sm text-muted-foreground ms-2">
-                {isArabic ? 'من الشهر الماضي' : 'from last month'}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {isArabic ? 'إجمالي الطلبات' : 'Total Orders'}
+              </CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {analyticsData.overview.totalOrders}
+              </div>
+              <div className="flex items-center mt-2">
+                {analyticsData.growth.ordersGrowth >= 0 ? (
+                  <TrendingUp className="h-4 w-4 text-green-500 me-1" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-red-500 me-1" />
+                )}
+                <span className={`text-sm ${analyticsData.growth.ordersGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {analyticsData.growth.ordersGrowth >= 0 ? '+' : ''}{analyticsData.growth.ordersGrowth}%
+                </span>
+                <span className="text-sm text-muted-foreground ms-2">
+                  {isArabic ? 'من الفترة السابقة' : 'from previous period'}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {isArabic ? 'العملاء المتكررون' : 'Repeat Customers'}
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">34.5%</div>
-            <div className="flex items-center mt-2">
-              <TrendingUp className="h-4 w-4 text-green-500 me-1" />
-              <span className="text-sm text-green-500">+5.1%</span>
-              <span className="text-sm text-muted-foreground ms-2">
-                {isArabic ? 'زيادة' : 'increase'}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {isArabic ? 'التقييم' : 'Rating'}
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analyticsData.overview.averageRating.toFixed(1)}/5</div>
+              <div className="flex items-center mt-2">
+                <span className="text-sm text-muted-foreground">
+                  {analyticsData.overview.totalReviews} {isArabic ? 'تقييم' : 'reviews'}
+                </span>
+                {analyticsData.overview.isVerified && (
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    {isArabic ? 'موثق' : 'Verified'}
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Main Analytics Tabs */}
-      <Tabs defaultValue="revenue" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+      {analyticsData && (
+        <>
+        <Tabs defaultValue="revenue" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="revenue">{isArabic ? 'الإيرادات' : 'Revenue'}</TabsTrigger>
           <TabsTrigger value="products">{isArabic ? 'المنتجات' : 'Products'}</TabsTrigger>
           <TabsTrigger value="customers">{isArabic ? 'العملاء' : 'Customers'}</TabsTrigger>
@@ -239,99 +389,99 @@ export default function SellerAnalyticsPage() {
           <TabsTrigger value="performance">{isArabic ? 'الأداء' : 'Performance'}</TabsTrigger>
         </TabsList>
 
-        {/* Revenue Tab */}
-        <TabsContent value="revenue" className="space-y-4">
-          <div className="grid gap-4 lg:grid-cols-2">
+          {/* Revenue Tab */}
+          <TabsContent value="revenue" className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{isArabic ? 'اتجاه الإيرادات' : 'Revenue Trend'}</CardTitle>
+                  <CardDescription>
+                    {isArabic ? 'تطور الإيرادات والمشاهدات والطلبات' : 'Revenue, views and orders evolution'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <ComposedChart data={analyticsData.chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis yAxisId="left" />
+                      <YAxis yAxisId="right" orientation="right" />
+                      <Tooltip />
+                      <Legend />
+                      <Bar yAxisId="left" dataKey="revenue" fill="#3b82f6" name={isArabic ? 'الإيرادات' : 'Revenue'} />
+                      <Line yAxisId="right" type="monotone" dataKey="views" stroke="#10b981" name={isArabic ? 'المشاهدات' : 'Views'} />
+                      <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#f59e0b" name={isArabic ? 'الطلبات' : 'Orders'} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>{isArabic ? 'أفضل المنتجات' : 'Top Products'}</CardTitle>
+                  <CardDescription>
+                    {isArabic ? 'المنتجات الأكثر مشاهدة' : 'Most viewed products'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {analyticsData.topListings.map((listing, index) => (
+                      <div key={listing.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{isArabic ? listing.title : (listing.titleEn || listing.title)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {listing.views} {isArabic ? 'مشاهدة' : 'views'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-sm font-medium flex items-center gap-1">
+                          {formatCurrency(listing.price)}
+                          <SARSymbol className="h-3 w-3" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
             <Card>
               <CardHeader>
-                <CardTitle>{isArabic ? 'اتجاه الإيرادات' : 'Revenue Trend'}</CardTitle>
-                <CardDescription>
-                  {isArabic ? 'الإيرادات الشهرية ومتوسط قيمة الطلب' : 'Monthly revenue and average order value'}
-                </CardDescription>
+                <CardTitle>{isArabic ? 'تفاصيل الإيرادات' : 'Revenue Breakdown'}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <ComposedChart data={revenueData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Legend />
-                    <Bar yAxisId="left" dataKey="revenue" fill="#3b82f6" name={isArabic ? 'الإيرادات' : 'Revenue'} />
-                    <Line yAxisId="right" type="monotone" dataKey="avgOrderValue" stroke="#10b981" name={isArabic ? 'متوسط القيمة' : 'Avg Value'} />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{isArabic ? 'التوزيع الجغرافي' : 'Geographic Distribution'}</CardTitle>
-                <CardDescription>
-                  {isArabic ? 'المبيعات حسب المدينة' : 'Sales by city'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={geographicData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ city, sales }) => `${city}: ${sales}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="sales"
-                    >
-                      {geographicData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Revenue Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{isArabic ? 'تفاصيل الإيرادات' : 'Revenue Breakdown'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {productPerformance.map((product) => (
-                  <div key={product.category} className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium">{product.category}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {formatCurrency(product.revenue)} SAR
+                <div className="space-y-4">
+                  {productPerformance.map((product) => (
+                    <div key={product.category} className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium">{product.category}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {formatCurrency(product.revenue)} SAR
+                          </span>
+                        </div>
+                        <Progress value={(product.revenue / 450000) * 100} className="h-2" />
+                      </div>
+                      <div className="ms-4 flex items-center">
+                        {product.growth > 0 ? (
+                          <ArrowUpRight className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <ArrowDownRight className="h-4 w-4 text-red-500" />
+                        )}
+                        <span className={`text-sm ${product.growth > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {Math.abs(product.growth)}%
                         </span>
                       </div>
-                      <Progress value={(product.revenue / 450000) * 100} className="h-2" />
                     </div>
-                    <div className="ms-4 flex items-center">
-                      {product.growth > 0 ? (
-                        <ArrowUpRight className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <ArrowDownRight className="h-4 w-4 text-red-500" />
-                      )}
-                      <span className={`text-sm ${product.growth > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {Math.abs(product.growth)}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Products Tab */}
         <TabsContent value="products" className="space-y-4">
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
@@ -430,7 +580,6 @@ export default function SellerAnalyticsPage() {
           </div>
         </TabsContent>
 
-        {/* Customers Tab */}
         <TabsContent value="customers" className="space-y-4">
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
@@ -548,7 +697,6 @@ export default function SellerAnalyticsPage() {
           </div>
         </TabsContent>
 
-        {/* Conversion Tab */}
         <TabsContent value="conversion" className="space-y-4">
           <Card>
             <CardHeader>
@@ -615,7 +763,6 @@ export default function SellerAnalyticsPage() {
           </div>
         </TabsContent>
 
-        {/* Performance Tab */}
         <TabsContent value="performance" className="space-y-4">
           <Card>
             <CardHeader>
@@ -775,6 +922,8 @@ export default function SellerAnalyticsPage() {
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   );
 }

@@ -144,21 +144,21 @@ export function EnhancedProductCard({
   if (viewMode === 'list') {
     return (
       <Card className={cn(
-        "group overflow-hidden transition-all duration-300 hover:shadow-lg",
-        "bg-white dark:bg-card border-border/50 hover:border-saudi-green/30",
+        "group overflow-hidden transition-all duration-300 hover:shadow-md",
+        "bg-white dark:bg-card border border-border/50 hover:border-saudi-green/30",
         "flex flex-row gap-4 p-4",
-        !enhancedListing.inStock && "opacity-75",
+        !enhancedListing.inStock && "opacity-60",
         className
       )}>
         {/* List Image */}
-        <div className="w-32 h-32 bg-muted flex items-center justify-center relative overflow-hidden rounded-lg flex-shrink-0">
+        <div className="w-28 h-28 bg-muted/50 flex items-center justify-center relative overflow-hidden rounded-lg flex-shrink-0">
           {hasPhoto ? (
             <Image 
               src={listing.photos[0].url} 
               alt={isArabic ? listing.titleAr : listing.titleEn || listing.titleAr}
               fill
               className={cn(
-                "object-cover transition-all duration-500 group-hover:scale-110",
+                "object-cover transition-all duration-300 group-hover:scale-105",
                 imageLoading && "blur-sm"
               )}
               onLoad={() => setImageLoading(false)}
@@ -180,20 +180,12 @@ export function EnhancedProductCard({
               size="lg"
             />
           )}
-          {/* Quick View for List */}
-          {onQuickView && (
-            <Button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onQuickView();
-              }}
-              className="absolute top-2 end-2 bg-white/90 hover:bg-white text-black shadow-md transition-all hover:scale-105"
-              size="sm"
-              variant="ghost"
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
+          {!enhancedListing.inStock && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <span className="text-white text-xs font-medium px-2 py-1 bg-red-500 rounded">
+                {isArabic ? 'نفد' : 'Out'}
+              </span>
+            </div>
           )}
         </div>
 
@@ -201,27 +193,30 @@ export function EnhancedProductCard({
         <div className="flex-1 space-y-3">
           {/* Title & Price Row */}
           <div className="flex justify-between items-start gap-4">
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg leading-tight line-clamp-2 group-hover:text-saudi-green transition-colors">
+            <div className="flex-1 space-y-1">
+              <h3 className={cn(
+                "font-semibold text-base leading-tight line-clamp-2 group-hover:text-saudi-green transition-colors",
+                isArabic && "font-bold"
+              )}>
                 {isArabic ? listing.titleAr : listing.titleEn || listing.titleAr}
               </h3>
-              {enhancedListing.partNumber && (
-                <p className="text-sm text-muted-foreground font-mono mt-1">
-                  {isArabic ? 'رقم القطعة:' : 'Part #'} {enhancedListing.partNumber}
-                </p>
-              )}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="font-medium">{listing.make} {listing.model}</span>
+                <span>•</span>
+                <span>{listing.fromYear}-{listing.toYear}</span>
+              </div>
             </div>
-            <div className="text-end">
+            <div className="text-end space-y-1">
               <div className="flex items-center gap-1">
-                <span className="text-2xl font-bold text-saudi-green">
+                <span className="text-xl font-bold text-saudi-green">
                   {(listing.priceSar / 100).toLocaleString(isArabic ? 'ar-SA' : 'en-US')}
                 </span>
                 <SARSymbol className="h-5 w-5 text-saudi-green/80" />
               </div>
-              {enhancedListing.warrantyMonths && (
-                <div className="text-sm text-desert-gold font-medium mt-1">
-                  <Shield className="h-4 w-4 inline me-1" />
-                  {enhancedListing.warrantyMonths} {isArabic ? 'شهر ضمان' : 'mo warranty'}
+              {enhancedListing.warrantyMonths && enhancedListing.warrantyMonths > 0 && (
+                <div className="flex items-center gap-1 text-xs text-desert-gold">
+                  <Shield className="h-3 w-3" />
+                  <span>{enhancedListing.warrantyMonths} {isArabic ? 'شهر' : 'mo'}</span>
                 </div>
               )}
             </div>
@@ -230,45 +225,46 @@ export function EnhancedProductCard({
           {/* Details & Actions */}
           <div className="flex justify-between items-end">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Badge 
                   variant="outline"
                   className={cn(
-                    "text-sm border-2",
-                    listing.condition === 'NEW' && "border-green-200 bg-green-50 text-green-800",
-                    listing.condition === 'USED' && "border-amber-200 bg-amber-50 text-amber-800",
-                    listing.condition === 'REFURBISHED' && "border-blue-200 bg-blue-50 text-blue-800"
+                    "text-xs",
+                    listing.condition === 'NEW' && "border-green-200 bg-green-50 text-green-700",
+                    listing.condition === 'USED' && "border-amber-200 bg-amber-50 text-amber-700",
+                    listing.condition === 'REFURBISHED' && "border-blue-200 bg-blue-50 text-blue-700"
                   )}
                 >
-                  <div className={cn("w-2 h-2 rounded-full me-1", conditionColors[listing.condition as keyof typeof conditionColors])} />
                   {conditionLabels[listing.condition]?.[locale as 'ar' | 'en'] || listing.condition}
                 </Badge>
-                <span className="text-sm text-muted-foreground">
-                  {listing.make} {listing.model} ({listing.fromYear}-{listing.toYear})
-                </span>
-              </div>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3" />
                   {listing.city}
                 </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-foreground">
+                  {seller.businessName || seller.yardName}
+                </span>
+                {seller.verified && (
+                  <CheckCircle className="h-4 w-4 text-saudi-green" />
+                )}
                 <div className="flex items-center gap-1">
-                  <Truck className="h-4 w-4" />
-                  {enhancedListing.deliveryTime}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Eye className="h-4 w-4" />
-                  {enhancedListing.views} {isArabic ? 'مشاهدة' : 'views'}
+                  {renderStars(seller.rating!)}
+                  <span className="text-xs text-muted-foreground ms-1">
+                    ({seller.totalReviews})
+                  </span>
                 </div>
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <Button
                 onClick={() => onToggleFavorite?.(listing.id)}
                 variant="ghost"
                 size="sm"
-                className="h-9 w-9 p-0"
+                className="h-8 w-8 p-0"
               >
                 <Heart className={cn(
                   "h-4 w-4 transition-colors",
@@ -282,7 +278,7 @@ export function EnhancedProductCard({
                 disabled={!enhancedListing.inStock}
               >
                 <Link href={`/${locale}/shop/listing/${listing.id}`}>
-                  {isArabic ? 'عرض التفاصيل' : 'View Details'}
+                  {isArabic ? 'التفاصيل' : 'Details'}
                 </Link>
               </Button>
               <QuickAddToCart 
@@ -304,34 +300,32 @@ export function EnhancedProductCard({
   // Grid view layout (default)
   return (
     <Card className={cn(
-      // Enhanced product card styling
+      // Modern minimal card styling
       "group overflow-hidden cursor-pointer",
-      // Premium gradient background
-      "bg-gradient-to-br from-card via-card to-saudi-green/2",
-      // Enhanced borders with gradient
-      "border-2 border-border/30 hover:border-saudi-green/40",
-      // Enhanced shadows with product-specific depth
-      "shadow-md hover:shadow-xl hover:shadow-saudi-green/15",
-      // Better hover effects with lift and subtle scale
-      "hover:-translate-y-2 hover:scale-[1.01]",
-      // Smooth transitions with easing
-      "transition-all duration-500 ease-out",
-      // Enhanced backdrop blur for depth
-      "backdrop-blur-sm",
+      // Clean background
+      "bg-white dark:bg-card",
+      // Subtle borders
+      "border border-border/50 hover:border-saudi-green/30",
+      // Clean shadows
+      "shadow-sm hover:shadow-lg",
+      // Gentle hover effects
+      "hover:-translate-y-1 hover:scale-[1.02]",
+      // Smooth transitions
+      "transition-all duration-300 ease-out",
       // Out of stock styling
-      !enhancedListing.inStock && "opacity-75 grayscale hover:grayscale-0",
+      !enhancedListing.inStock && "opacity-60",
       className
     )}>
       {/* Image Header */}
       <CardHeader className="p-0 relative">
-        <div className="aspect-square bg-muted flex items-center justify-center relative overflow-hidden">
+        <div className="aspect-square bg-muted/50 flex items-center justify-center relative overflow-hidden rounded-t-lg">
           {hasPhoto ? (
             <Image 
               src={listing.photos[0].url} 
               alt={isArabic ? listing.titleAr : listing.titleEn || listing.titleAr}
               fill
               className={cn(
-                "object-cover transition-all duration-500 group-hover:scale-110",
+                "object-cover transition-all duration-300 group-hover:scale-105",
                 imageLoading && "blur-sm"
               )}
               onLoad={() => setImageLoading(false)}
@@ -359,242 +353,116 @@ export function EnhancedProductCard({
             <div className="absolute inset-0 bg-muted animate-pulse" />
           )}
 
-          {/* Top Badges */}
-          <div className="absolute top-2 start-2 flex flex-col gap-1">
+          {/* Simplified Top Badges */}
+          <div className="absolute top-3 start-3">
             {listing.condition === 'NEW' && (
-              <div className="px-2 py-1 bg-green-500/90 text-white text-xs font-bold rounded-full flex items-center gap-1 backdrop-blur-sm">
-                <Sparkles className="h-3 w-3" />
+              <Badge className="bg-green-500 text-white text-xs font-medium px-2 py-1">
                 {isArabic ? 'جديد' : 'New'}
-              </div>
-            )}
-            {enhancedListing.warrantyMonths && enhancedListing.warrantyMonths > 0 && (
-              <div className="px-2 py-1 bg-saudi-green/90 text-white text-xs font-semibold rounded-full flex items-center gap-1 backdrop-blur-sm">
-                <Shield className="h-3 w-3" />
-                {enhancedListing.warrantyMonths} {isArabic ? 'شهر' : 'mo'}
-              </div>
-            )}
-          </div>
-
-          {/* Top Right Actions */}
-          <div className="absolute top-2 end-2 flex flex-col gap-1">
-            <div className="flex gap-1">
-              {/* Quick View Button - Better hover behavior */}
-              {onQuickView && (
-                <Button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onQuickView();
-                  }}
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 bg-white/90 backdrop-blur-sm hover:bg-saudi-green hover:text-white hover:scale-105 transition-all duration-200 shadow-lg border border-white/20 md:translate-y-2 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100"
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-              )}
-              <Button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onToggleFavorite?.(listing.id);
-                }}
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 bg-white/90 backdrop-blur-sm hover:bg-red-50 hover:scale-105 transition-all duration-200 shadow-lg border border-white/20"
-              >
-                <Heart className={cn(
-                  "h-4 w-4 transition-all duration-200",
-                  isFavorited 
-                    ? "fill-red-500 text-red-500 scale-110" 
-                    : "text-muted-foreground hover:text-red-500"
-                )} />
-              </Button>
-            </div>
-            {!enhancedListing.inStock && (
-              <Badge className="bg-red-500/90 text-white text-xs backdrop-blur-sm">
-                {isArabic ? 'نفد' : 'Out'}
               </Badge>
             )}
           </div>
 
-          {/* Bottom Badges */}
-          <div className="absolute bottom-2 start-2 flex gap-1">
-            {enhancedListing.installationAvailable && (
-              <Badge className="bg-riyadh-sky/90 text-white text-xs backdrop-blur-sm">
-                <Zap className="h-3 w-3 me-1" />
-                {isArabic ? 'تركيب' : 'Install'}
+          {/* Top Right Actions - Simplified */}
+          <div className="absolute top-3 end-3">
+            <Button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleFavorite?.(listing.id);
+              }}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 bg-white/90 hover:bg-white transition-colors rounded-full shadow-sm"
+            >
+              <Heart className={cn(
+                "h-4 w-4 transition-colors",
+                isFavorited 
+                  ? "fill-red-500 text-red-500" 
+                  : "text-muted-foreground hover:text-red-500"
+              )} />
+            </Button>
+          </div>
+
+          {/* Out of stock overlay */}
+          {!enhancedListing.inStock && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <Badge className="bg-red-500 text-white px-3 py-1">
+                {isArabic ? 'نفد المخزون' : 'Out of Stock'}
               </Badge>
-            )}
-          </div>
-
-          {/* Quick View Button - Shows on Hover */}
-          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center backdrop-blur-sm">
-            {onQuickView && (
-              <Button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onQuickView();
-                }}
-                className="bg-white text-black hover:bg-white/90 transition-all duration-200 shadow-lg scale-95 group-hover:scale-100"
-                size="sm"
-              >
-                <Eye className="h-4 w-4 me-2" />
-                {isArabic ? 'معاينة سريعة' : 'Quick View'}
-              </Button>
-            )}
-          </div>
-
-          {/* Views Counter */}
-          <div className="absolute bottom-2 end-2">
-            <div className="px-2 py-1 bg-black/50 text-white text-xs rounded-full flex items-center gap-1 backdrop-blur-sm">
-              <Eye className="h-3 w-3" />
-              {enhancedListing.views}
             </div>
-          </div>
+          )}
         </div>
       </CardHeader>
 
       <CardContent className="p-4 space-y-3">
-        {/* Title & Part Number */}
-        <div className="space-y-1">
-          <h3 className="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-saudi-green transition-colors">
+        {/* Title */}
+        <div className="space-y-2">
+          <h3 className={cn(
+            "font-semibold text-base leading-tight line-clamp-2 group-hover:text-saudi-green transition-colors",
+            isArabic && "font-bold"
+          )}>
             {isArabic ? listing.titleAr : listing.titleEn || listing.titleAr}
           </h3>
-          {enhancedListing.partNumber && (
-            <p className="text-xs text-muted-foreground font-mono">
-              {isArabic ? 'رقم القطعة:' : 'Part #'} {enhancedListing.partNumber}
-            </p>
-          )}
-        </div>
-
-        {/* Enhanced Seller Info */}
-        <div className={cn(
-          "flex items-center gap-2 p-3 rounded-lg relative overflow-hidden",
-          "bg-gradient-to-r from-muted/20 via-muted/30 to-muted/20",
-          "border border-border/20 group-hover:border-saudi-green/20",
-          "transition-all duration-300"
-        )}>
-          {/* Seller reputation indicator */}
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-saudi-green/30 to-transparent" />
           
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-foreground truncate">
-                {seller.businessName || seller.yardName}
-              </span>
-              {seller.verified && (
-                <div className="flex items-center">
-                  <CheckCircle className="h-3 w-3 text-saudi-green flex-shrink-0" />
-                  <span className="text-xs text-saudi-green ml-0.5 font-medium">{isArabic ? 'موثق' : 'Verified'}</span>
-                </div>
-              )}
-              {seller.certifications && seller.certifications.length > 0 && (
-                <div className="flex items-center">
-                  <Award className="h-3 w-3 text-desert-gold flex-shrink-0" />
-                  <span className="text-xs text-desert-gold ml-0.5 font-medium">{isArabic ? 'معتمد' : 'Certified'}</span>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex items-center gap-0.5">{renderStars(seller.rating!)}</div>
-              <span className="text-xs text-muted-foreground font-medium">
-                {seller.rating?.toFixed(1)} ({seller.totalReviews})
-              </span>
-            </div>
-          </div>
-          <div className="text-end">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
-              <Clock className="h-3 w-3 text-saudi-green" />
-              <span className="font-medium">{seller.responseTime}</span>
-            </div>
+          {/* Vehicle Info */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="font-medium">{listing.make} {listing.model}</span>
+            <span className="text-xs">•</span>
+            <span>{listing.fromYear}-{listing.toYear}</span>
           </div>
         </div>
 
-        {/* Vehicle Compatibility */}
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
-            <Badge 
-              variant="outline"
-              className={cn(
-                "text-xs border-2",
-                listing.condition === 'NEW' && "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-400",
-                listing.condition === 'USED' && "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-                listing.condition === 'REFURBISHED' && "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-              )}
-            >
-              <div className={cn("w-2 h-2 rounded-full me-1", conditionColors[listing.condition as keyof typeof conditionColors])} />
-              {conditionLabels[listing.condition]?.[locale as 'ar' | 'en'] || listing.condition}
-            </Badge>
-          </div>
-          <div className="text-xs text-muted-foreground font-medium">
-            {listing.make} {listing.model}
-          </div>
-        </div>
-
-        {/* Years & Location */}
+        {/* Condition & Location */}
         <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-1 px-2 py-1 bg-muted/50 rounded text-xs font-medium">
-            {listing.fromYear} - {listing.toYear}
-          </span>
+          <Badge 
+            variant="outline"
+            className={cn(
+              "text-xs",
+              listing.condition === 'NEW' && "border-green-200 bg-green-50 text-green-700",
+              listing.condition === 'USED' && "border-amber-200 bg-amber-50 text-amber-700",
+              listing.condition === 'REFURBISHED' && "border-blue-200 bg-blue-50 text-blue-700"
+            )}
+          >
+            {conditionLabels[listing.condition]?.[locale as 'ar' | 'en'] || listing.condition}
+          </Badge>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="h-3 w-3" />
             {listing.city}
           </div>
         </div>
 
-        {/* Delivery Info */}
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <Truck className="h-3 w-3" />
-            {enhancedListing.deliveryTime}
-          </div>
-          {enhancedListing.savedBy && enhancedListing.savedBy > 0 && (
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <Heart className="h-3 w-3" />
-              {enhancedListing.savedBy} {isArabic ? 'محفوظ' : 'saved'}
+        {/* Seller Info - Simplified */}
+        <div className="flex items-center gap-2 py-2">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground">
+                {seller.businessName || seller.yardName}
+              </span>
+              {seller.verified && (
+                <CheckCircle className="h-4 w-4 text-saudi-green" />
+              )}
             </div>
-          )}
+            <div className="flex items-center gap-1 mt-1">
+              {renderStars(seller.rating!)}
+              <span className="text-xs text-muted-foreground ms-1">
+                {seller.rating?.toFixed(1)} ({seller.totalReviews})
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Enhanced Price Display */}
-        <div className={cn(
-          "flex items-center justify-between pt-3 mt-1",
-          "border-t border-gradient-to-r from-transparent via-border/50 to-transparent",
-          "relative"
-        )}>
-          {/* Price highlight background */}
-          <div className="absolute inset-0 bg-gradient-to-r from-saudi-green/2 via-transparent to-desert-gold/2 rounded-lg -mx-2 -my-1" />
-          
-          <div className="flex items-center gap-2 relative z-10">
-            <div className="flex items-center gap-1">
-              <span className={cn(
-                "text-xl font-bold text-saudi-green",
-                "group-hover:scale-105 transition-transform duration-200"
-              )}>
-                {(listing.priceSar / 100).toLocaleString(isArabic ? 'ar-SA' : 'en-US')}
-              </span>
-              <SARSymbol className="h-5 w-5 text-saudi-green/80" />
-            </div>
-            {/* Add competitive pricing indicator */}
-            {(listing.priceSar / 100) < 5000 && (
-              <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 px-2 py-1 rounded-full text-xs font-bold">
-                <TrendingUp className="h-3 w-3" />
-                <span>{isArabic ? 'سعر ممتاز' : 'Great Deal'}</span>
-              </div>
-            )}
+        {/* Price & Warranty */}
+        <div className="flex items-center justify-between pt-3 border-t border-border/50">
+          <div className="flex items-center gap-1">
+            <span className="text-xl font-bold text-saudi-green">
+              {(listing.priceSar / 100).toLocaleString(isArabic ? 'ar-SA' : 'en-US')}
+            </span>
+            <SARSymbol className="h-5 w-5 text-saudi-green/80" />
           </div>
-          {enhancedListing.warrantyMonths && (
-            <div className={cn(
-              "flex items-center gap-1 text-xs font-semibold relative z-10",
-              "bg-desert-gold/10 text-desert-gold px-2 py-1 rounded-full",
-              "border border-desert-gold/20"
-            )}>
+          {enhancedListing.warrantyMonths && enhancedListing.warrantyMonths > 0 && (
+            <div className="flex items-center gap-1 text-xs text-desert-gold bg-desert-gold/10 px-2 py-1 rounded-full">
               <Shield className="h-3 w-3" />
-              <span>
-                {enhancedListing.warrantyMonths} {isArabic ? 'شهر ضمان' : 'mo warranty'}
-              </span>
+              <span>{enhancedListing.warrantyMonths} {isArabic ? 'شهر' : 'mo'}</span>
             </div>
           )}
         </div>
@@ -602,7 +470,7 @@ export function EnhancedProductCard({
 
       <CardFooter className="p-4 pt-0 flex gap-2">
         <Button 
-          className="flex-1 transition-all duration-300 hover:shadow-md" 
+          className="flex-1" 
           variant="outline" 
           asChild
           disabled={!enhancedListing.inStock}
@@ -611,17 +479,15 @@ export function EnhancedProductCard({
             {isArabic ? 'عرض التفاصيل' : 'View Details'}
           </Link>
         </Button>
-        <div className="transition-all duration-300 hover:scale-105">
-          <QuickAddToCart 
-            listing={listing} 
-            size="default" 
-            disabled={!enhancedListing.inStock}
-            className={cn(
-              enhancedListing.inStock ? "btn-saudi" : "",
-              !enhancedListing.inStock && "opacity-50 cursor-not-allowed"
-            )}
-          />
-        </div>
+        <QuickAddToCart 
+          listing={listing} 
+          size="default" 
+          disabled={!enhancedListing.inStock}
+          className={cn(
+            enhancedListing.inStock ? "btn-saudi" : "",
+            !enhancedListing.inStock && "opacity-50 cursor-not-allowed"
+          )}
+        />
       </CardFooter>
     </Card>
   );

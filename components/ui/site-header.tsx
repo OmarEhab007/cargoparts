@@ -10,13 +10,26 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CartBadge } from '@/components/features/cart-badge';
+import { useAuth } from '@/hooks/use-auth';
 import { 
   Menu,
   User,
   Globe,
   Package,
-  Phone
+  Phone,
+  Settings,
+  LogOut,
+  Store,
+  BarChart3
 } from 'lucide-react';
 
 export function SiteHeader() {
@@ -24,11 +37,26 @@ export function SiteHeader() {
   const pathname = usePathname();
   const isArabic = locale === 'ar';
   const [isOpen, setIsOpen] = useState(false);
+  const { user, seller, isLoading, isLoggedIn } = useAuth();
 
   const toggleLocale = () => {
     const newLocale = locale === 'ar' ? 'en' : 'ar';
     const newPath = pathname.replace(`/${locale}`, `/${newLocale}`);
     window.location.href = newPath;
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      window.location.href = `/${locale}`;
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force redirect even if logout fails
+      window.location.href = `/${locale}`;
+    }
   };
 
   const navigation = [
@@ -42,7 +70,7 @@ export function SiteHeader() {
     },
     {
       name: isArabic ? 'كيف نعمل' : 'How It Works',
-      href: `/${locale}#how-it-works`,
+      href: `/${locale}`,
     },
     {
       name: isArabic ? 'عن كارجو' : 'About',
@@ -72,12 +100,12 @@ export function SiteHeader() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-8 rtl:space-x-reverse">
+          <nav className="hidden lg:flex items-center space-x-6 rtl:space-x-reverse">
             {navigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`text-muted-foreground hover:text-saudi-green transition-colors nav-link ${isArabic ? 'text-sm font-semibold' : 'text-sm font-medium'}`}
+                className={`text-muted-foreground hover:text-saudi-green transition-colors nav-link whitespace-nowrap ${isArabic ? 'text-sm font-semibold' : 'text-sm font-medium'}`}
               >
                 {item.name}
               </Link>
@@ -100,19 +128,89 @@ export function SiteHeader() {
             {/* Cart */}
             <CartBadge />
 
-            {/* Account */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`hidden sm:flex text-muted-foreground hover:text-saudi-green ${isArabic ? 'font-semibold' : ''}`}
-            >
-              <User className="h-4 w-4 me-1" />
-              {isArabic ? 'حسابي' : 'Account'}
-            </Button>
+            {/* Account - Authenticated vs Non-authenticated */}
+            {isLoading ? (
+              <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+            ) : isLoggedIn && user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.avatar} alt={user.name} />
+                      <AvatarFallback className="bg-saudi-green text-white">
+                        {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-1 leading-none">
+                      <p className={`font-medium ${isArabic ? 'font-semibold' : ''}`}>
+                        {user.name}
+                      </p>
+                      <p className="w-[200px] truncate text-sm text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  
+                  {/* Dashboard/Profile */}
+                  <DropdownMenuItem asChild>
+                    <Link href={`/${locale}/dashboard`}>
+                      <BarChart3 className="mr-2 h-4 w-4" />
+                      <span>{isArabic ? 'لوحة التحكم' : 'Dashboard'}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  {/* Seller specific items */}
+                  {seller && (
+                    <DropdownMenuItem asChild>
+                      <Link href={`/${locale}/seller/dashboard`}>
+                        <Store className="mr-2 h-4 w-4" />
+                        <span>{isArabic ? 'إدارة المتجر' : 'Manage Store'}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {/* Settings */}
+                  <DropdownMenuItem asChild>
+                    <Link href={`/${locale}/profile`}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>{isArabic ? 'الإعدادات' : 'Settings'}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  {/* Logout */}
+                  <DropdownMenuItem 
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>{isArabic ? 'تسجيل الخروج' : 'Logout'}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`hidden sm:flex text-muted-foreground hover:text-saudi-green ${isArabic ? 'font-semibold' : ''}`}
+                asChild
+              >
+                <Link href={`/${locale}/auth`}>
+                  <User className="h-4 w-4 me-1" />
+                  {isArabic ? 'تسجيل الدخول' : 'Login'}
+                </Link>
+              </Button>
+            )}
 
             {/* CTA Button */}
             <Button className="btn-saudi hidden md:flex" asChild>
-              <Link href={`/${locale}/seller/dashboard`}>
+              <Link href={`/${locale}/auth?mode=register&role=seller`}>
                 {isArabic ? 'ابدأ البيع' : 'Sell Parts'}
               </Link>
             </Button>
@@ -144,7 +242,7 @@ export function SiteHeader() {
                       <Link
                         key={item.name}
                         href={item.href}
-                        className={`text-foreground hover:text-saudi-green transition-colors py-2 nav-link ${isArabic ? 'text-lg font-semibold' : 'text-lg font-medium'}`}
+                        className={`text-foreground hover:text-saudi-green transition-colors py-2 nav-link whitespace-nowrap ${isArabic ? 'text-lg font-semibold' : 'text-lg font-medium'}`}
                         onClick={() => setIsOpen(false)}
                       >
                         {item.name}
@@ -163,25 +261,100 @@ export function SiteHeader() {
                       {isArabic ? 'English' : 'العربية'}
                     </Button>
                     
-                    <Button 
-                      variant="outline" 
-                      className="justify-start h-12"
-                      asChild
-                    >
-                      <Link href={`/${locale}/account`} onClick={() => setIsOpen(false)}>
-                        <User className="h-4 w-4 me-2" />
-                        {isArabic ? 'حسابي' : 'My Account'}
-                      </Link>
-                    </Button>
+                    {isLoggedIn && user ? (
+                      <>
+                        {/* User Profile Info */}
+                        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={user.avatar} alt={user.name} />
+                            <AvatarFallback className="bg-saudi-green text-white">
+                              {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <p className={`font-medium ${isArabic ? 'font-semibold' : ''}`}>
+                              {user.name}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Dashboard */}
+                        <Button 
+                          variant="outline" 
+                          className="justify-start h-12"
+                          asChild
+                        >
+                          <Link href={`/${locale}/dashboard`} onClick={() => setIsOpen(false)}>
+                            <BarChart3 className="h-4 w-4 me-2" />
+                            {isArabic ? 'لوحة التحكم' : 'Dashboard'}
+                          </Link>
+                        </Button>
 
-                    <Button 
-                      className="btn-saudi h-12" 
-                      asChild
-                    >
-                      <Link href={`/${locale}/seller/dashboard`} onClick={() => setIsOpen(false)}>
-                        {isArabic ? 'ابدأ البيع مجاناً' : 'Start Selling Free'}
-                      </Link>
-                    </Button>
+                        {/* Seller Dashboard */}
+                        {seller && (
+                          <Button 
+                            variant="outline" 
+                            className="justify-start h-12"
+                            asChild
+                          >
+                            <Link href={`/${locale}/seller/dashboard`} onClick={() => setIsOpen(false)}>
+                              <Store className="h-4 w-4 me-2" />
+                              {isArabic ? 'إدارة المتجر' : 'Manage Store'}
+                            </Link>
+                          </Button>
+                        )}
+
+                        {/* Settings */}
+                        <Button 
+                          variant="outline" 
+                          className="justify-start h-12"
+                          asChild
+                        >
+                          <Link href={`/${locale}/profile`} onClick={() => setIsOpen(false)}>
+                            <Settings className="h-4 w-4 me-2" />
+                            {isArabic ? 'الإعدادات' : 'Settings'}
+                          </Link>
+                        </Button>
+
+                        {/* Logout */}
+                        <Button 
+                          variant="outline" 
+                          className="justify-start h-12 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+                          onClick={() => {
+                            setIsOpen(false);
+                            handleLogout();
+                          }}
+                        >
+                          <LogOut className="h-4 w-4 me-2" />
+                          {isArabic ? 'تسجيل الخروج' : 'Logout'}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          className="justify-start h-12"
+                          asChild
+                        >
+                          <Link href={`/${locale}/auth`} onClick={() => setIsOpen(false)}>
+                            <User className="h-4 w-4 me-2" />
+                            {isArabic ? 'تسجيل الدخول' : 'Login / Register'}
+                          </Link>
+                        </Button>
+
+                        <Button 
+                          className="btn-saudi h-12" 
+                          asChild
+                        >
+                          <Link href={`/${locale}/auth?mode=register&role=seller`} onClick={() => setIsOpen(false)}>
+                            {isArabic ? 'ابدأ البيع مجاناً' : 'Start Selling Free'}
+                          </Link>
+                        </Button>
+                      </>
+                    )}
                   </div>
 
                   {/* Contact Info */}
